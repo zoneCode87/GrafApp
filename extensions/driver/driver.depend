@@ -1,0 +1,18 @@
+# depslib dependency file v1.0
+1771281965 source:e:\githup\grafapp\extensions\driver\main.cpp
+	<iostream>
+	<string>
+	<thread>
+	<vector>
+	<atomic>
+	<windows.h>
+	"SerialPort.h"
+	"subFunction.h"
+
+1771182589 e:\githup\grafapp\extensions\driver\serialport.h
+	<windows.h>
+	<string>
+	<iostream>
+
+1771190415 e:\githup\grafapp\extensions\driver\subfunction.h
+

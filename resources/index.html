@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles.css">
+    <title>DAQ Sensor Dashboard</title>
+  </head>
+
+  <body>
+    <div class="app-container">
+      
+      <header class="toolbar">
+        <div class="toolbar-group">
+          <select id="comPortList" class="pure-input-1-2">
+              <option value="">Searching for ports...</option>
+          </select>
+          <button class="pure-button btn-primary" id="btnConnect">
+            <i class="fa-solid fa-link"></i> Connect
+          </button>
+        </div>
+        
+        <div class="toolbar-separator"></div>
+        
+        <div class="toolbar-group">
+          <button class="pure-button btn-ghost btn-play " id="btnPlay">
+            <i class="fa-solid fa-play"></i> Play
+          </button>
+          <button class="pure-button btn-ghost btn-stop" id="btnStop">
+            <i class="fa-solid fa-stop"></i> Stop
+          </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-group">
+          <button class="pure-button btn-primary" id="btnViewDashboard">
+            <i class="fa-solid fa-border-all"></i> Dashboard
+          </button>
+          <button class="pure-button btn-ghost" id="btnViewGraph">
+            <i class="fa-solid fa-chart-line"></i> Create Graph
+          </button>
+          <button class="pure-button btn-ghost" id="btnCsv">
+            <i class="fa-solid fa-file-csv"></i> Save CSV
+          </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-group right-align">
+          <button class="pure-button btn-icon-only" id="btnSettings" title="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+        </div>
+      </header>
+
+      <main id="view-dashboard" class="view-active">
+        <div class="sensor-grid" id="sensorGrid">
+           
+
+        </div>
+
+
+
+          </div>
+      </main>
+      
+      <main id="view-graphs" class="view-hidden">
+        <div class="graph-toolbar">
+          <h2 class="graph-title">Live Data Graphs</h2>
+          <button class="pure-button btn-primary" id="btnAddGraph">
+            <i class="fa-solid fa-plus"></i> Add New Graph
+          </button>
+        </div>
+        
+        <div class="graph-grid" id="graphContainer">
+          <div class="graph-placeholder">
+            <i class="fa-solid fa-chart-area"></i>
+            <p>No graphs created yet. Click "Add New Graph" to start.</p>
+          </div>
+        </div>
+      </main>
+
+
+
+
+
+
+      <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-sliders"></i> Sensor Configuration</h2>
+            <button class="pure-button btn-ghost" id="btnCloseSettings">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          
+              <div class="modal-body">
+                          <div class="table-scroll-container">
+                            <table class="pure-table pure-table-horizontal" style="width: 100%;">
+                              <thead>
+                                <tr>
+                                  <th>CH</th>
+                                  <th>Name</th>
+                                  <th>Unit</th>
+                                  <th>Min (Raw)</th>
+                                  <th>Max (Raw)</th>
+                                  <th><i class="fa-solid fa-arrow-right"></i></th>
+                                  <th>Target Min</th>
+                                  <th>Target Max</th>
+                                  <th>Map?</th>
+                                </tr>
+                              </thead>
+                              <tbody id="settingsTableBody">
+                                </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+          <div class="modal-footer" style="text-align: right; margin-top: 20px; display: flex; ">
+            <button class="pure-button btn-primary" id="btnSaveSettings">
+              <i class="fa-solid fa-floppy-disk"></i> Save All
+            </button>
+
+
+            <button class="pure-button" id="btnResetSettings" style="background-color: #c0392b; color: white; margin-left:  10px;">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+
+
+          </div>
+        </div>
+      </div>
+
+    </div> <script src="/js/neutralino.js"></script>
+    <script src="/js/main.js" type="module"></script>
+  </body>
+</html>
