@@ -144,26 +144,30 @@ Neutralino.events.on('spawnedProcess', (event) => {
                     try {
                         let liveData = JSON.parse(cleanData);
                         
-                        if (liveData.sensors && Array.isArray(liveData.sensors) && isRun ) {
+                        if (liveData.sensors && Array.isArray(liveData.sensors) && isRun) {
                             let boardId = liveData.id; 
 
-                            // إذا كان البورد جديداً، ننشئ له سجلاً فارغاً في الذاكرة
                             if (!config.data[`board_${boardId}`]) {
                                 config.data[`board_${boardId}`] = {};
                             }
+
+                            // --- السطر الجديد الذي أضفناه لتسجيل الـ CSV ---
+                            // ------------------------------------------------
 
                             liveData.sensors.forEach((sensorObj) => {
                                 let sensorKey = Object.keys(sensorObj)[0];   
                                 let rawValue = sensorObj[sensorKey];            
                                 
-                                // جلب الإعدادات (الاسم، الوحدة، min، max) من الهارد ديسك
                                 let currentSettings = config.getSensorConfig(boardId, sensorKey);
-                                
-                                // إرسال البيانات للكلاس لبناء أو تحديث الكرت
                                 sensor.process_sensor_data(boardId, sensorKey, rawValue, currentSettings);
                             });
+                            
+                            ui.logCSVFrame(liveData.sensors);
+
                         }
-                    } catch (e) {
+                    }
+                    
+                    catch (e) {
                         let msg = cleanData;
                         console.log("🖥️ [C++]: ", msg);
                         handleMessageDriver(msg);
@@ -187,7 +191,7 @@ Neutralino.events.on('windowClose', async () => {
 // ==========================================
 
 async function initializeApp() {
-    await config.loadAll(); // تحميل الإعدادات من الهارد ديسك أولاً
+     // تحميل الإعدادات من الهارد ديسك أولاً
     await refreshComPorts(); // جلب المنافذ
     await startHardwareDriver(); // تشغيل الـ C++
 }
@@ -199,17 +203,25 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// ==========================================
+// 7. الكماند الي بتيجي من ال driver 
+// ==========================================
 
-function handleMessageDriver(Message){
+
+async function handleMessageDriver(Message){
         if (Message.includes("Handshake Successful")) {
             isSystemConnected = true;
             isRun = true ; 
             console.log(isSystemConnected);
             ui.styleConectBtn(isSystemConnected);
             ui.style_Run_Stop_btn(isRun); 
+            await config.loadAll();
+            
         }
 }
 
+
+ ui.save_csv_file();
 
 
 initializeApp();

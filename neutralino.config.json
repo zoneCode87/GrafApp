@@ -24,8 +24,8 @@
     "os.*",
     "window.*",
     "events.*",
-    "storage.*"
-    
+    "storage.*",
+    "filesystem.*"
 ],
   "globalVariables": {
     "TEST1": "Hello",
