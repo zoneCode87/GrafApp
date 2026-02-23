@@ -57,14 +57,7 @@
       </header>
 
       <main id="view-dashboard" class="view-active">
-        <div class="sensor-grid" id="sensorGrid">
-           
-
-        </div>
-
-
-
-          </div>
+        <div class="sensor-grid" id="sensorGrid"></div>
       </main>
       
      
@@ -84,11 +77,6 @@
         </div>
       </main>
 
-
-
-
-
-
       <div id="settingsModal" class="modal-overlay hidden">
         <div class="modal-content">
           <div class="modal-header">
@@ -98,46 +86,87 @@
             </button>
           </div>
           
-              <div class="modal-body">
-                          <div class="table-scroll-container">
-                            <table class="pure-table pure-table-horizontal" style="width: 100%;">
-                              <thead>
-                                <tr>
-                                  <th>CH</th>
-                                  <th>Name</th>
-                                  <th>Unit</th>
-                                  <th>Min (Raw)</th>
-                                  <th>Max (Raw)</th>
-                                  <th><i class="fa-solid fa-arrow-right"></i></th>
-                                  <th>Target Min</th>
-                                  <th>Target Max</th>
-                                  <th>Map</th>
-                                  <th>Time(s)</th>
-                                  <th>Average</th>
-                                </tr>
-                              </thead>
-                              <tbody id="settingsTableBody">
-                                </tbody>
-                            </table>
-                          </div>
-                        </div>
+          <div class="modal-body">
+            <div class="table-scroll-container">
+              <table class="pure-table pure-table-horizontal" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>CH</th>
+                    <th>Name</th>
+                    <th>Unit</th>
+                    <th>Min (Raw)</th>
+                    <th>Max (Raw)</th>
+                    <th><i class="fa-solid fa-arrow-right"></i></th>
+                    <th>Target Min</th>
+                    <th>Target Max</th>
+                    <th>Map</th>
+                    <th>Time(s)</th>
+                    <th>Average</th>
+                  </tr>
+                </thead>
+                <tbody id="settingsTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           <div class="modal-footer" style="text-align: right; margin-top: 20px; display: flex; ">
             <button class="pure-button btn-primary" id="btnSaveSettings">
               <i class="fa-solid fa-floppy-disk"></i> Save All
             </button>
 
-
             <button class="pure-button" id="btnResetSettings" style="background-color: #c0392b; color: white; margin-left:  10px;">
               <i class="fa-solid fa-rotate-left"></i> Reset
             </button>
-
-
           </div>
         </div>
       </div>
 
-    </div> <script src="/js/neutralino.js"></script>
+      <div id="addGraphModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-chart-line"></i> Add New Graph</h2>
+            <button class="pure-button btn-ghost" id="btnCloseGraphModal">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          
+          <div class="modal-body">
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; background: #1a1d24; padding: 10px; border-radius: 6px;">
+              <label style="cursor: pointer;"><input type="radio" name="graphType" value="basic" checked> Basic Sensor</label>
+              <label style="cursor: pointer;"><input type="radio" name="graphType" value="equation"> Math Equation</label>
+            </div>
+              <div id="basicGraphSection">
+              <label style="display: block; margin-bottom: 5px;">Select Sensors (Max 3):</label>
+              <div id="sensorCheckboxes" style="display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background: #2a2a2a; border: 1px solid #444; border-radius: 4px;">
+                </div>
+            </div>
+            <div id="equationGraphSection" class="hidden">
+              <label style="display: block; margin-bottom: 5px;">Graph Name:</label>
+              <input type="text" id="eqGraphName" placeholder="e.g. Temperature Difference" style="width: 100%; padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; margin-bottom: 15px;">
+              
+              <label style="display: block; margin-bottom: 5px;">Equation:</label>
+              <input type="text" id="eqGraphFormula" placeholder="e.g. ch0 + (ch1 * 2)" style="width: 100%; padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; font-family: monospace;">
+              
+              <div style="margin-top: 15px; background: #1a1d24; padding: 10px; border-radius: 4px; font-size: 0.85rem;">
+                <strong>Available Variables:</strong>
+                <p id="availableVarsList" style="color: var(--accent-blue); margin: 5px 0 0 0; word-wrap: break-word;"></p>
+                <small style="color: #94a3b8; display: block; margin-top: 5px;">* Use exact variable names. Supported operators: +, -, *, /, (, )</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="text-align: right; margin-top: 20px;">
+            <button class="pure-button btn-primary" id="btnConfirmAddGraph">
+              <i class="fa-solid fa-plus"></i> Create Graph
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+    <script src="/js/neutralino.js"></script>
     <script src="/js/main.js" type="module"></script>
   </body>
 </html>

@@ -151,9 +151,7 @@ Neutralino.events.on('spawnedProcess', (event) => {
                                 config.data[`board_${boardId}`] = {};
                             }
 
-                            // --- السطر الجديد الذي أضفناه لتسجيل الـ CSV ---
-                            // ------------------------------------------------
-
+                            // تحديث قيم Dashboard
                             liveData.sensors.forEach((sensorObj) => {
                                 let sensorKey = Object.keys(sensorObj)[0];   
                                 let rawValue = sensorObj[sensorKey];            
@@ -162,7 +160,24 @@ Neutralino.events.on('spawnedProcess', (event) => {
                                 sensor.process_sensor_data(boardId, sensorKey, rawValue, currentSettings);
                             });
                             
+                            // تسجيل البيانات في ملف الـ CSV
                             ui.logCSVFrame(liveData.sensors);
+
+                            // ==========================================
+                            // إضافة: إرسال البيانات إلى الرسوم البيانية
+                            // ==========================================
+                            let flatSensorData = {};
+                            
+                            liveData.sensors.forEach((sensorObj) => {
+                                let sensorKey = Object.keys(sensorObj)[0];
+                                // نجلب القيمة المفلترة/المعاملة مباشرة من الشاشة (Dashboard) لتكون مطابقة لما يراه المستخدم
+                                let valElement = document.getElementById(`val-${sensorKey}`);
+                                flatSensorData[sensorKey] = valElement ? parseFloat(valElement.innerText) : parseFloat(sensorObj[sensorKey]);
+                            });
+
+                            // تحديث جميع الرسوم البيانية بالبيانات الجديدة
+                            ui.graphManager.updateAllGraphs(flatSensorData);
+                            // ==========================================
 
                         }
                     }
@@ -220,8 +235,6 @@ async function handleMessageDriver(Message){
         }
 }
 
-
- ui.save_csv_file();
-
+ui.save_csv_file();
 
 initializeApp();

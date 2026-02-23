@@ -363,3 +363,29 @@ select#comPortList option {
     color: #ffffff;
     padding: 10px;
 }
+
+/* resources/styles.css */
+
+.graph-grid {
+  display: grid; /* استخدام نظام الشبكة بدلاً من Flex */
+  grid-template-columns: repeat(2, 1fr); /* تقسيم المساحة إلى عمودين متساويين تماماً */
+  grid-auto-rows: max-content; /* ارتفاع الصف حسب المحتوى */
+  gap: 50px; /* المسافة بين الرسوم أفقياً وعمودياً */
+  align-items: start; /* محاذاة العناصر للأعلى */
+  
+  padding: 15px;
+  height: auto; 
+  min-height: 70%; /* لضمان وجود مساحة كافية حتى لو كانت فارغة */
+  border: 2px dashed var(--border-color);
+  border-radius: 10px; 
+  background-color: transparent;
+  overflow-y: auto; /* إضافة شريط تمرير إذا زادت الرسوم عن ارتفاع الشاشة */
+}
+
+/* إضافة تحسين صغير للشاشات الصغيرة */
+/* إذا كانت الشاشة أصغر من 900 بكسل، ارجع لرسم واحد في السطر عشان ما ينضغطوا */
+@media (max-width: 900px) {
+  .graph-grid {
+    grid-template-columns: 1fr; 
+  }
+}
