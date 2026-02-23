@@ -4,23 +4,23 @@ export class GraphManager {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.graphs = {}; 
-        this.maxDataPoints = 5000; // الذاكرة تحتفظ بـ 5000 قراءة (تاريخ طويل)
+        this.maxDataPoints = 5000; 
         this.graphCounter = 0; 
     }
 
-    // 1. إضافة رسم عادي يدعم عدة حساسات
     addBasicGraph(sensorIds, sensorNames) {
         this.graphCounter++;
         let gId = `basic_${this.graphCounter}`;
         
         let traces = sensorIds.map((sId, index) => {
-            const colors = ['#0ea5e9', '#10b981', '#f59e0b']; 
+            const scadaColors = ['#00FF00', '#00FFFF', '#FFB000', '#FF2A2A', '#CC00FF']; 
             return {
                 x: [], y: [],
-                mode: 'lines+markers',
+                mode: 'lines+markers', 
                 name: sensorNames[index],
-                line: { color: colors[index % colors.length], width: 2.5, shape: 'spline' },
-                marker: { size: 5 }
+                line: { color: scadaColors[index % scadaColors.length], width: 1.5, shape: 'linear' },
+                marker: { size: 5, color: '#050505', line: { width: 1.5, color: scadaColors[index % scadaColors.length] } },
+                hovertemplate: 'Val: %{y:.2f}<extra></extra>' 
             };
         });
 
@@ -28,7 +28,6 @@ export class GraphManager {
         this.createGraphUI(gId, title, 'basic', sensorIds, null, traces);
     }
 
-    // 2. إضافة رسم يعتمد على معادلة
     addEquationGraph(graphName, equationString) {
         this.graphCounter++;
         let gId = `eq_${this.graphCounter}`;
@@ -36,42 +35,38 @@ export class GraphManager {
             x: [], y: [],
             mode: 'lines+markers',
             name: graphName,
-            line: { color: '#8b5cf6', width: 2.5, shape: 'spline' },
-            marker: { size: 5 }
+            line: { color: '#00FFFF', width: 1.5, shape: 'linear' },
+            marker: { size: 5, color: '#050505', line: { width: 1.5, color: '#00FFFF' } },
+            hovertemplate: 'Val: %{y:.2f}<extra></extra>'
         }];
         this.createGraphUI(gId, graphName, 'equation', null, equationString, trace);
     }
 
-    // بناء الواجهة (بإضافة الأزرار الجديدة)
     createGraphUI(graphId, title, type, sensorIds, equation, tracesData) {
         const placeholder = this.container.querySelector('.graph-placeholder');
         if (placeholder) placeholder.style.display = 'none';
 
         const wrapper = document.createElement('div');
         wrapper.className = 'graph-wrapper';
-        // قمنا بزيادة padding-top إلى 55px لترك مساحة كافية للأزرار العلوية
-        wrapper.style.cssText = 'width: 100%; box-sizing: border-box; background-color: var(--bg-panel); padding: 15px; padding-top: 55px; border-radius: 8px; border: 1px solid var(--border-color); position: relative; overflow: hidden;';
+        wrapper.style.cssText = 'width: 100%; box-sizing: border-box; background-color: #050505; padding: 15px; padding-top: 55px; border-radius: 4px; border: 1px solid #1f2937; position: relative; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);';
 
-        // ==========================================
-        // إنشاء شريط الأدوات لكل رسم بياني (Auto Scroll + CSV + Delete)
-        // ==========================================
         const controlsDiv = document.createElement('div');
         controlsDiv.style.cssText = 'position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; gap: 8px;';
 
         const autoScrollBtn = document.createElement('button');
         autoScrollBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Auto Scroll';
         autoScrollBtn.className = 'pure-button btn-primary';
-        autoScrollBtn.style.cssText = 'padding: 5px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; transition: 0.3s;';
+        autoScrollBtn.style.cssText = 'padding: 5px 10px; font-size: 0.75rem; border-radius: 2px; cursor: pointer; transition: 0.3s; background-color: #008000; color: #00FF00; border: 1px solid #00FF00; font-family: monospace;';
 
         const csvBtn = document.createElement('button');
-        csvBtn.innerHTML = '<i class="fa-solid fa-download"></i> Save CSV';
+        csvBtn.innerHTML = '<i class="fa-solid fa-download"></i> CSV';
         csvBtn.className = 'pure-button';
-        csvBtn.style.cssText = 'background-color: #10b981; color: white; border: none; padding: 5px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer;';
+        csvBtn.style.cssText = 'background-color: #1a1a1a; color: #00FFFF; border: 1px solid #00FFFF; padding: 5px 10px; font-size: 0.75rem; border-radius: 2px; cursor: pointer; font-family: monospace;';
 
         const deleteBtn = document.createElement('button');
         deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         deleteBtn.className = 'pure-button button-error btn-icon-only';
-        deleteBtn.style.cssText = 'padding: 5px 8px; border-radius: 4px;';
+        deleteBtn.style.cssText = 'padding: 5px 8px; border-radius: 2px; background-color: #330000; color: #FF2A2A; border: 1px solid #FF2A2A;';
 
         controlsDiv.appendChild(autoScrollBtn);
         controlsDiv.appendChild(csvBtn);
@@ -80,87 +75,82 @@ export class GraphManager {
 
         const plotDiv = document.createElement('div');
         plotDiv.id = `plot-${graphId}`;
-        plotDiv.style.cssText = 'width: 100%; height: 280px;';
+        plotDiv.style.cssText = 'width: 100%; height: 300px;';
 
-        // إظهار المعادلة على اليسار إذا كان نوعه معادلة
         if (type === 'equation') {
             const eqHint = document.createElement('div');
             eqHint.innerHTML = `<i class="fa-solid fa-calculator"></i> <code>f(x) = ${equation}</code>`;
-            eqHint.style.cssText = 'color: #94a3b8; font-size: 0.85rem; position: absolute; top: 15px; left: 15px;';
+            eqHint.style.cssText = 'color: #00FFFF; font-family: monospace; font-size: 0.85rem; position: absolute; top: 15px; left: 15px;';
             wrapper.appendChild(eqHint);
         }
 
         wrapper.appendChild(plotDiv);
         this.container.appendChild(wrapper);
 
-        // حفظ بيانات الرسم مع ميزة autoScroll مفعلة افتراضياً
         this.graphs[graphId] = {
             div: plotDiv, type: type, sensorIds: sensorIds, equation: equation, autoScroll: true
         };
 
-        // ==========================================
-        // برمجة الأزرار
-        // ==========================================
-
-        // زر التمرير (Scroll Toggle)
+        // زر الـ Auto Scroll
         autoScrollBtn.onclick = () => {
             let g = this.graphs[graphId];
-            g.autoScroll = !g.autoScroll; // عكس الحالة
+            g.autoScroll = !g.autoScroll;
             if (g.autoScroll) {
                 autoScrollBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Auto Scroll';
-                autoScrollBtn.className = 'pure-button btn-primary';
-                autoScrollBtn.style.backgroundColor = 'var(--accent-blue)';
-                autoScrollBtn.style.border = 'none';
+                autoScrollBtn.style.backgroundColor = '#008000';
+                autoScrollBtn.style.color = '#00FF00';
+                autoScrollBtn.style.border = '1px solid #00FF00';
             } else {
                 autoScrollBtn.innerHTML = '<i class="fa-solid fa-unlock"></i> Free Scroll';
-                autoScrollBtn.className = 'pure-button btn-ghost';
-                autoScrollBtn.style.backgroundColor = 'transparent';
-                autoScrollBtn.style.border = '1px solid #475569';
-                autoScrollBtn.style.color = '#94a3b8';
+                autoScrollBtn.style.backgroundColor = '#1a1a1a';
+                autoScrollBtn.style.color = '#888';
+                autoScrollBtn.style.border = '1px solid #444';
             }
         };
 
-        // زر حفظ الـ CSV للرسم الحالي فقط
+        // حدث النقر المزدوج (Double Click) ليعيد تفعيل الـ Auto Scroll بدلاً من التكبير العشوائي
+        plotDiv.addEventListener('dblclick', () => {
+            let g = this.graphs[graphId];
+            if (!g.autoScroll) {
+                g.autoScroll = true; // تفعيل السكرول
+                autoScrollBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Auto Scroll';
+                autoScrollBtn.style.backgroundColor = '#008000';
+                autoScrollBtn.style.color = '#00FF00';
+                autoScrollBtn.style.border = '1px solid #00FF00';
+            }
+        });
+
+        // زر الـ CSV
         csvBtn.onclick = async () => {
             try {
                 let g = this.graphs[graphId];
                 let traces = g.div.data; 
-                
                 if (!traces || traces.length === 0 || !traces[0].x || traces[0].x.length === 0) {
-                    alert("⚠️ لا توجد بيانات لحفظها حتى الآن!");
-                    return;
+                    alert("⚠️ لا توجد بيانات لحفظها حتى الآن!"); return;
                 }
-                
                 let csvContent = "Time,";
                 let headers = traces.map(t => t.name).join(",");
                 csvContent += headers + "\n";
-                
                 let times = traces[0].x;
                 for (let i = 0; i < times.length; i++) {
                     let d = new Date(times[i]);
                     let timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
                     let row = [timeStr];
-                    
                     for (let j = 0; j < traces.length; j++) {
                         row.push(traces[j].y[i] !== undefined ? traces[j].y[i].toFixed(2) : "");
                     }
                     csvContent += row.join(",") + "\n";
                 }
-                
-                let cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '_'); // تنظيف الاسم ليناسب الويندوز
-                let filePath = await Neutralino.os.showSaveDialog('Save Graph Data', {
-                    defaultPath: `Graph_${cleanTitle}.csv`,
+                let cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '_'); 
+                let filePath = await Neutralino.os.showSaveDialog('Save SCADA Log', {
+                    defaultPath: `SCADA_Log_${cleanTitle}.csv`,
                     filters: [{ name: 'CSV Files', extensions: ['csv'] }]
                 });
-                
                 if (filePath) {
                     await Neutralino.filesystem.writeFile(filePath, csvContent);
-                    alert("✅ تم حفظ بيانات الرسم بنجاح!");
+                    alert("✅ تم حفظ السجل بنجاح!");
                 }
-            } catch (err) {
-                console.error("❌ خطأ أثناء حفظ الـ CSV:", err);
-                alert("حدث خطأ أثناء الحفظ!");
-            }
+            } catch (err) { console.error(err); }
         };
 
         // زر الحذف
@@ -171,29 +161,53 @@ export class GraphManager {
             if (Object.keys(this.graphs).length === 0 && placeholder) placeholder.style.display = 'block';
         };
 
-        // إعدادات Plotly
-// إعدادات Plotly (تم تحسين الـ Y-axis لإظهار التفاصيل والفواصل)
-// إعدادات Plotly
         const layout = {
-            title: { text: title, font: { color: '#e2e8f0', size: 16 } },
-            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-            margin: { l: 45, r: 20, t: 30, b: 30 },
+            title: { 
+                text: `[ SYS: ${title.toUpperCase()} ]`, 
+                font: { family: '"Courier New", Courier, monospace', color: '#888', size: 14 },
+                x: 0.02, xanchor: 'left'
+            },
+            paper_bgcolor: '#050505', 
+            plot_bgcolor: '#050505',
+            margin: { l: 60, r: 25, t: 45, b: 35 }, 
+            
+            hovermode: 'x unified', 
+            hoverlabel: {
+                bgcolor: '#000000', 
+                bordercolor: '#00FF00', 
+                font: { family: 'monospace', color: '#00FF00', size: 12 }
+            },
+
             xaxis: { 
                 type: 'date',
                 tickformat: '%H:%M:%S',
-                tickfont: { color: '#94a3b8' }, 
-                gridcolor: '#2d3748' 
+                tickfont: { family: 'monospace', color: '#888', size: 11 }, 
+                gridcolor: '#1a1a1a', 
+                zeroline: false,
+                showline: true, 
+                linecolor: '#333',
+                linewidth: 2
             },
             yaxis: { 
-                tickfont: { color: '#94a3b8' }, 
-                gridcolor: '#2d3748',
-                hoverformat: '.2f' // سيعرض لك القيمة الدقيقة بفاصلتين عند وضع الماوس على النقطة
-                // أزلنا nticks و tickformat لكي يختار Plotly الشكل الأنسب والمريح للعين تلقائياً
+                tickfont: { family: 'monospace', color: '#888', size: 11 }, 
+                gridcolor: '#1a1a1a',
+                zerolinecolor: '#333', 
+                zerolinewidth: 1,
+                showline: true,
+                linecolor: '#333',
+                linewidth: 2
+                // تم إزالة autorange من هنا لأننا سنحسبها يدوياً بدقة مع إضافة padding
             },
-            showlegend: (type === 'basic' && sensorIds.length > 1)
+            showlegend: (type === 'basic' && sensorIds.length > 1),
+            legend: {
+                orientation: 'h', y: 1.15, x: 1, xanchor: 'right',
+                font: { family: 'monospace', color: '#ccc', size: 11 },
+                bgcolor: 'transparent'
+            }
         };
 
-        Plotly.newPlot(plotDiv, tracesData, layout, { responsive: true, displayModeBar: false });
+        // قمنا بإضافة doubleClick: false لإيقاف الزوم الافتراضي لـ Plotly
+        Plotly.newPlot(plotDiv, tracesData, layout, { responsive: true, displayModeBar: false, doubleClick: false });
     }
 
     evaluateEquation(equation, sensorDataObj) {
@@ -207,21 +221,16 @@ export class GraphManager {
         }
     }
 
-updateAllGraphs(sensorDataObj) {
+    updateAllGraphs(sensorDataObj) {
         let exactTime = new Date(); 
-        let viewWindowMs = 20 * 1000; // الإطار الزمني للـ Scroll (20 ثانية)
-        
-        // --- التعديل هنا لعمل الـ Gap ---
-        let futureOffsetMs = 1500; // مقدار المسافة (ثانية ونصف للمستقبل)
-        let pastTime = new Date(exactTime.getTime() - viewWindowMs);
-        let futureTime = new Date(exactTime.getTime() + futureOffsetMs); 
-        // --------------------------------
+        let halfWindowMs = 15 * 1000; 
+        let pastTime = new Date(exactTime.getTime() - halfWindowMs);
+        let futureTime = new Date(exactTime.getTime() + halfWindowMs); 
 
         for (let gId in this.graphs) {
             let g = this.graphs[gId];
             let hasNewData = false;
 
-            // 1. إضافة البيانات الجديدة
             if (g.type === 'basic') {
                 let updateX = [];
                 let updateY = [];
@@ -248,12 +257,39 @@ updateAllGraphs(sensorDataObj) {
                 }
             }
 
-            // 2. تحديث الشاشة فقط إذا كان (Auto Scroll) مفعلاً
             if (hasNewData && g.autoScroll) {
-                Plotly.relayout(g.div, {
-                    // --- استخدام futureTime بدلاً من exactTime ---
-                    'xaxis.range': [pastTime, futureTime] 
+                // حساب أعلى وأقل قيمة (Min / Max) ضمن الإطار الزمني الظاهر حالياً لإضافة الـ Padding
+                let minY = Infinity;
+                let maxY = -Infinity;
+                
+                g.div.data.forEach(trace => {
+                    for(let i = trace.x.length - 1; i >= 0; i--) {
+                        let pTime = new Date(trace.x[i]).getTime();
+                        if (pTime < pastTime.getTime()) break; // إذا تخطينا الماضي نتوقف لزيادة السرعة
+                        
+                        if (pTime <= futureTime.getTime()) {
+                            let yVal = trace.y[i];
+                            if (yVal < minY) minY = yVal;
+                            if (yVal > maxY) maxY = yVal;
+                        }
+                    }
                 });
+
+                let layoutUpdate = {
+                    'xaxis.range': [pastTime, futureTime]
+                };
+
+                // تطبيق الهامش (Padding) بنسبة 20%
+                if (minY !== Infinity && maxY !== -Infinity) {
+                    let range = maxY - minY;
+                    if (range === 0) range = 1; // تفادي القسمة على صفر في حال كان الخط مستقيم ثابت
+                    let yPadding = range * 0.2; // 20% فراغ من الأعلى والأسفل
+
+                    layoutUpdate['yaxis.range'] = [minY - yPadding, maxY + yPadding];
+                    layoutUpdate['yaxis.autorange'] = false; 
+                }
+
+                Plotly.relayout(g.div, layoutUpdate);
             }
         }
     }
