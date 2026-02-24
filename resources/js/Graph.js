@@ -8,6 +8,23 @@ export class GraphManager {
         this.graphCounter = 0;
         this._equationCache = new Map();
         this.onGraphDeleted = null;
+
+        // تهيئة الإشعارات Notyf بنفس الشكل الاحترافي
+        this.notyf = new Notyf({
+            duration: 3000,
+            position: { x: 'right', y: 'top' },
+            types: [
+                {
+                    type: 'warning',
+                    background: 'orange',
+                    icon: {
+                        className: 'fa-solid fa-triangle-exclamation',
+                        tagName: 'i',
+                        color: 'white'
+                    }
+                }
+            ]
+        });
     }
 
     addBasicGraph(sensorIds, sensorNames) {
@@ -27,7 +44,6 @@ export class GraphManager {
         this.createGraphUI(gId, sensorNames.join(' & '), 'basic', sensorIds, null, traces);
     }
 
-    // --- تم التعديل هنا ليدعم الـ ID المحفوظ مسبقاً ويحتفظ باسم المعادلة ---
     addEquationGraph(graphName, equationString, existingId = null) {
         let gId;
         if (existingId) {
@@ -49,8 +65,8 @@ export class GraphManager {
         }];
         
         this.createGraphUI(gId, graphName, 'equation', null, equationString, trace);
-        this.graphs[gId].name = graphName; // حفظ اسم المعادلة لاستخدامه لاحقاً
-        return gId; // إرجاع الـ ID لإنشاء الكرت الخاص به
+        this.graphs[gId].name = graphName; 
+        return gId; 
     }
 
     addCSVGraph(fileName, csvContent) {
@@ -267,7 +283,8 @@ export class GraphManager {
             try {
                 const traces = g.div.data;
                 if (!traces?.length || !traces[0].x?.length) {
-                    alert('⚠️ لا توجد بيانات لحفظها حتى الآن!');
+                    // تم التعديل هنا: استخدام Notyf ورسالة باللغة الإنجليزية
+                    this.notyf.open({ type: 'warning', message: 'No data available to export yet!' });
                     return;
                 }
                 const rows = ['Time,' + traces.map(t => t.name).join(',')];
@@ -282,12 +299,13 @@ export class GraphManager {
                     rows.push(row.join(','));
                 }
                 const filePath = await Neutralino.os.showSaveDialog('Save SCADA Log', {
-                    defaultPath: `SCADA_Log_${graphTitle.replace(/[^a-zA-Z0-9]/g, '_')}.csv`,
+                    defaultPath: `_Log_${graphTitle.replace(/[^a-zA-Z0-9]/g, '_')}.csv`,
                     filters: [{ name: 'CSV Files', extensions: ['csv'] }]
                 });
                 if (filePath) {
                     await Neutralino.filesystem.writeFile(filePath, rows.join('\n'));
-                    alert('✅ تم حفظ السجل بنجاح!');
+                    // تم التعديل هنا: استخدام Notyf للنجاح ورسالة باللغة الإنجليزية
+                    this.notyf.success('Log exported successfully!');
                 }
             } catch (err) { console.error(err); }
         };
@@ -297,7 +315,6 @@ export class GraphManager {
             delete this.graphs[graphId];
             wrapper.remove();
             
-            // --- حذف الكرت الافتراضي (Virtual Card) من لوحة التحكم عند الحذف ---
             let virtualCard = document.getElementById(`card-${graphId}`);
             if(virtualCard) virtualCard.remove();
             
@@ -407,10 +424,8 @@ export class GraphManager {
                     Plotly.extendTraces(g.div, { x: [[now]], y: [[val]] }, [0], this.maxDataPoints);
                     newYValues.push(val);
                     
-                    // --- إضافة العبقرية هنا: إرجاع نتيجة المعادلة للبيانات الحية لربط المعادلات معاً ---
                     sensorDataObj[gId] = val;
                     
-                    // --- تحديث قيمة الكرت الافتراضي في لوحة الحساسات بشكل مباشر ---
                     const virtualCardVal = document.getElementById(`val-${gId}`);
                     if (virtualCardVal) {
                         virtualCardVal.innerText = val.toFixed(2);

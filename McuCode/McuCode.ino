@@ -38,10 +38,10 @@ void loop() {
     }
   } 
   else {
+    
     if (Serial.available() > 0) {
-      uint8_t byte = Serial.peek(); 
+      uint8_t byte = Serial.read(); 
       if (byte == 0xFF) {
-        Serial.read(); 
         isHandshakeDone = false;
         digitalWrite(LED_BUILTIN, LOW); 
         return; 
@@ -51,7 +51,7 @@ void loop() {
       }
     }
     
-    if (millis() - timer >= 1000){
+    else if (millis() - timer >= 1000){
         sendBinaryData();
         timer = millis(); 
     }

@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="./css/pure-min.css">
+    <link rel="stylesheet" href="./css/notyf.min.css">
+    <link rel="stylesheet" href="./css/styles.css">
     <title>GrafApp - Sensor Dashboard</title>
 </head>
 
@@ -13,6 +15,15 @@
     <div class="app-container">
       
         <header class="toolbar">
+            <div class="toolbar-group app-branding" style="display: flex; align-items: center; gap: 12px; margin-right: 15px; padding-right: 15px; border-right: 1px solid #333;">
+                <div class="logo-container" style="background: #00FFFF; color: #050505; padding: 6px 8px; border-radius: 4px; font-size: 1.4rem; box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div class="brand-text" style="display: flex; flex-direction: column; line-height: 1.2;">
+                    <span class="app-name" style="font-weight: 900; font-size: 1.2rem; color: #fff; letter-spacing: 1px;">GrafApp <span style="color: #00FFFF; font-size: 0.8rem;">SCADA</span></span>
+                    <span class="company-name" style="font-size: 0.7rem; color: #aaa; letter-spacing: 0.5px; font-family: monospace;">Rook raam</span>
+                </div>
+            </div>
             <div class="toolbar-group">
                 <select id="comPortList" class="pure-input-1-2">
                     <option value="">Searching for ports...</option>
@@ -166,7 +177,7 @@
                         <div style="background: #1a1d24; padding: 30px 15px; border-radius: 6px; text-align: center; border: 1px dashed #444;">
                             <i class="fa-solid fa-file-csv fa-3x" style="color: #00FFFF; margin-bottom: 15px;"></i>
                             <p style="color: #ccc; font-family: monospace; font-size: 14px; margin: 0;">
-                                سيتم فتح متصفح الملفات لاختيار ملف الـ CSV <br> بمجرد الضغط على زر "Create Graph".
+                                A file browser will open to select the CSV file <br> once you click "Create Graph".
                             </p>
                         </div>
                     </div>
@@ -182,8 +193,9 @@
         </div>
 
     </div>
-
-    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+    
+    <script src="./js/plotly-2.32.0.min.js"></script>
+    <script src="./js/notyf.min.js"></script>
     <script src="/js/neutralino.js"></script>
     <script src="/js/main.js" type="module"></script>
 </body>

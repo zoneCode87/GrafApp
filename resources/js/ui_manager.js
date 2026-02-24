@@ -13,6 +13,23 @@ export class UIManager {
             this.removeGraphFromStorage(graphId);
         };
 
+        // Initialize Notyf for professional notifications
+        this.notyf = new Notyf({
+            duration: 3000,
+            position: { x: 'right', y: 'top' },
+            types: [
+                {
+                    type: 'warning',
+                    background: 'orange',
+                    icon: {
+                        className: 'fa-solid fa-triangle-exclamation',
+                        tagName: 'i',
+                        color: 'white'
+                    }
+                }
+            ]
+        });
+
         this.btnViewDashboard = document.getElementById('btnViewDashboard');
         this.btnViewGraph = document.getElementById('btnViewGraph');
         this.viewDashboard = document.getElementById('view-dashboard');
@@ -85,11 +102,11 @@ export class UIManager {
     save_csv_file() {
         this.btnCSV.addEventListener('click', async () => {
             if (this.isRunning) {
-                alert("⚠️ الرجاء إيقاف القراءة (Stop) أولاً قبل حفظ الملف!");
+                this.notyf.open({ type: 'warning', message: "Please stop data acquisition before saving the file!" });
                 return;
             }
             if (this.csvBuffer.length === 0) {
-                alert("⚠️ لا توجد بيانات مسجلة لحفظها!");
+                this.notyf.error("No recorded data available to save!");
                 return;
             }
 
@@ -110,16 +127,17 @@ export class UIManager {
 
                 if (filePath) {
                     await Neutralino.filesystem.writeFile(filePath, csvString);
-                    alert("✅ تم حفظ الملف بنجاح!");
+                    this.notyf.success("File saved successfully!");
         
-                    let confirmClear = confirm("هل تريد مسح البيانات من الذاكرة لبدء تسجيل جديد؟");
+                    let confirmClear = confirm("Would you like to clear the recorded data to start a fresh session?");
                     if (confirmClear) {
                         this.csvBuffer = [];
                         this.csvHeaders.clear(); 
                     }
                 }
             } catch (err) {
-                console.error("❌ خطأ أثناء حفظ الملف:", err);
+                console.error("❌ File Save Error:", err);
+                this.notyf.error("An error occurred while saving the CSV file.");
             }
         });    
     }
@@ -201,15 +219,13 @@ export class UIManager {
         }
     }
 
-    // --- دالة جديدة لإنشاء كرت حساس افتراضي للمعادلات ---
     createVirtualSensorCard(id, name) {
         const grid = document.getElementById('sensorGrid');
-        if(!grid || document.getElementById(`card-${id}`)) return; // إذا الكرت موجود لا تنشئه
+        if(!grid || document.getElementById(`card-${id}`)) return; 
         
         const card = document.createElement('div');
         card.id = `card-${id}`;
         card.className = 'sensor-card'; 
-        // ستايل مميز للكرت الافتراضي (يمكنك تعديله بملف الـ CSS لاحقاً)
         card.style.cssText = 'background-color: #1a1a1a; border-left: 4px solid #00FFFF; padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 150px;';
         
         card.innerHTML = `
@@ -223,11 +239,10 @@ export class UIManager {
         grid.appendChild(card);
     }
 
-openGraphModal() {
+    openGraphModal() {
         this.sensorCheckboxes.innerHTML = '';
         this.availableVarsList.innerHTML = '';
         
-        // تعديل تنسيق الحاوية لتصبح شبكة مرنة (Flexbox) لعرض البطاقات بشكل جميل
         this.availableVarsList.style.display = 'flex';
         this.availableVarsList.style.flexWrap = 'wrap';
         this.availableVarsList.style.gap = '8px';
@@ -235,7 +250,7 @@ openGraphModal() {
 
         let boardKeys = Object.keys(this.config.data);
         if (boardKeys.length === 0) {
-            alert("⚠️ لم يتم استلام أي بيانات حتى الآن، انتظر قليلاً!");
+            this.notyf.open({ type: 'warning', message: "No data received yet. Please wait for incoming packets." });
             return;
         }
 
@@ -243,10 +258,8 @@ openGraphModal() {
         let sensors = this.config.data[mainBoard];
         let vars = [];
 
-        // 1. إضافة الحساسات الحقيقية
         for (let sensorId in sensors) {
             if (sensorId === 'graphs') continue; 
-
             let s = sensors[sensorId];
             let name = s.name || sensorId;
             
@@ -258,7 +271,6 @@ openGraphModal() {
             `;
             this.sensorCheckboxes.appendChild(wrapper);
             
-            // تصميم كشكل "بطاقة متطورة" للحساسات
             vars.push(`
                 <div style="background: #1e1e1e; border: 1px solid #333; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                     <code style="color: #00FF00; background: #000; padding: 3px 6px; border-radius: 3px; font-weight: bold; margin-right: 8px; font-family: monospace; border: 1px solid #003300;">${sensorId}</code>
@@ -267,7 +279,6 @@ openGraphModal() {
             `);
         }
 
-        // 2. إضافة الحساسات الافتراضية (المعادلات السابقة)
         for (let gId in this.graphManager.graphs) {
             let g = this.graphManager.graphs[gId];
             if (g.type === 'equation') {
@@ -280,7 +291,6 @@ openGraphModal() {
                 `;
                 this.sensorCheckboxes.appendChild(wrapper);
                 
-                // تصميم مختلف لمعادلات الرياضيات للتمييز البصري
                 vars.push(`
                     <div style="background: #001a1a; border: 1px solid #004d4d; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                         <code style="color: #00FFFF; background: #000; padding: 3px 6px; border-radius: 3px; font-weight: bold; margin-right: 8px; font-family: monospace; border: 1px solid #005555;">${gId}</code>
@@ -290,7 +300,6 @@ openGraphModal() {
             }
         }
 
-        // دمج البطاقات بدون فواصل نصية (بدون علامة |) لأنها أصبحت مربعات منفصلة
         this.availableVarsList.innerHTML = vars.join('');
         this.addGraphModal.classList.remove('hidden');
     }
@@ -314,11 +323,12 @@ openGraphModal() {
         let mainBoard = boardKeys.length > 0 ? boardKeys[0] : null;
 
         if (!mainBoard) {
-            alert("⚠️ لا يوجد بورد متصل حالياً!");
+            this.notyf.error("No active board found!");
             return;
         }
 
-        if (!this.config.data[mainBoard].graphs) {
+// التأكد من أن المتغير عبارة عن مصفوفة صالحة، وإلا قم بتهيئته كمصفوفة
+        if (!Array.isArray(this.config.data[mainBoard].graphs)) {
             this.config.data[mainBoard].graphs = [];
         }
 
@@ -327,11 +337,11 @@ openGraphModal() {
         if (selectedType === 'basic') {
             let checkedBoxes = this.sensorCheckboxes.querySelectorAll('input:checked');
             if (checkedBoxes.length === 0) {
-                alert("⚠️ الرجاء اختيار حساس واحد على الأقل!");
+                this.notyf.error('At least one sensor must be selected.');
                 return;
             }
             if (checkedBoxes.length > 3) {
-                alert("⚠️ الحد الأقصى هو 3 حساسات للرسم البياني الواحد!");
+                this.notyf.error("Maximum 3 sensors allowed per graph.");
                 return;
             }
 
@@ -349,24 +359,25 @@ openGraphModal() {
             graphConfig.sensorIds = ids;
             graphConfig.sensorNames = names;
 
+            this.notyf.success("Basic Graph added successfully.");
+
         } else {
             let gName = this.eqGraphName.value.trim();
             let gFormula = this.eqGraphFormula.value.trim();
             if (!gName || !gFormula) {
-                alert("⚠️ الرجاء إدخال اسم الرسم والمعادلة!");
+                this.notyf.error("Please provide both a name and a formula!");
                 return;
             }
             
-            // إضافة الرسم البياني واستلام الـ ID الخاص به
             let gId = this.graphManager.addEquationGraph(gName, gFormula);
-            
-            // إنشاء كرت حساس افتراضي في الواجهة
             this.createVirtualSensorCard(gId, gName);
             
             graphConfig.type = 'equation';
-            graphConfig.id = gId; // نحفظ الـ ID ليتم استرجاعه بنفس الاسم
+            graphConfig.id = gId; 
             graphConfig.equationName = gName;
             graphConfig.equationFormula = gFormula;
+
+            this.notyf.success("Equation Graph generated successfully.");
         }
         
         this.config.data[mainBoard].graphs.push(graphConfig);
@@ -387,10 +398,11 @@ openGraphModal() {
                 
                 let csvContent = await Neutralino.filesystem.readFile(filePath);
                 this.graphManager.addCSVGraph(fileName, csvContent);
+                this.notyf.success("CSV file imported and graphed successfully.");
             }
         } catch (err) {
-            console.error("❌ خطأ أثناء فتح ملف الـ CSV: ", err);
-            alert("⚠️ حدث خطأ أثناء فتح الملف، تأكد من صلاحيات القراءة.");
+            console.error("❌ CSV Import Error: ", err);
+            this.notyf.error("Failed to open the file. Check permissions.");
         }
     }
 
@@ -408,9 +420,7 @@ openGraphModal() {
                 if (g.type === 'basic') {
                     this.graphManager.addBasicGraph(g.sensorIds, g.sensorNames);
                 } else if (g.type === 'equation') {
-                    // استرجاع الرسمة وتمرير الـ ID القديم لكي لا تتكسر المعادلات المرتبطة
                     let gId = this.graphManager.addEquationGraph(g.equationName, g.equationFormula, g.id);
-                    // استرجاع الكرت الخاص بها
                     this.createVirtualSensorCard(gId, g.equationName);
                 }
             });
@@ -436,7 +446,6 @@ openGraphModal() {
         }
     }
 
-    // هنا يتم بناء جدول الإعدادات: وبما أن الحساسات الافتراضية مخزنة في مصفوفة Graphs وليست في Sensors، فهي لن تظهر هنا أبداً كما طلبت!
     openSettingsModal() {
         this.settingsTableBody.innerHTML = ''; 
         let boardKeys = Object.keys(this.config.data);
@@ -497,11 +506,12 @@ openGraphModal() {
             if(unitTag) unitTag.innerText = newConfig.unit;
         }
 
+        this.notyf.success("Settings saved and applied successfully.");
         this.closeSettingsModal();
     }
 
     async resetSettings() {
-        let confirmReset = confirm("⚠️ هل أنت متأكد من إعادة ضبط جميع الحساسات؟");
+        let confirmReset = confirm("⚠️ Are you sure you want to reset all sensor configurations to default?");
         if (confirmReset) {
             let boardKeys = Object.keys(this.config.data);
             if (boardKeys.length === 0) return;
@@ -516,6 +526,7 @@ openGraphModal() {
                 };
                 await this.config.updateSensorConfig(mainBoardId, sensorId, defaultVal);
             }
+            this.notyf.success("All sensors have been reset.");
             this.closeSettingsModal();
             setTimeout(() => this.openSettingsModal(), 100);
         }

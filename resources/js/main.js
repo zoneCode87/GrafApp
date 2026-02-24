@@ -29,15 +29,19 @@ let dataBuffer = "";
 let isRun = false; 
 
 btnPlay.addEventListener('click',()=>{
-    isRun = true;
-    ui.style_Run_Stop_btn(isRun)
+    if(isSystemConnected){
+        isRun = true;
+        ui.style_Run_Stop_btn(isRun)
+    }
 })
 
 
 
 btnStop.addEventListener('click',()=>{
-    isRun = false;
-    ui.style_Run_Stop_btn(isRun)
+    if(isSystemConnected){
+        isRun = false;
+        ui.style_Run_Stop_btn(isRun)
+    }
 })
 
 
