@@ -1,5 +1,5 @@
 {
   "applicationId": "js.neutralino.grafapp",
   "version": "1.0.1",
-  "resourcesURL": "https://proxy.corsfix.com/?https://github.com/zoneCode87/GrafApp/releases/download/v1.0.0/resources.neu"
+  "resourcesURL": "https://raw.githubusercontent.com/zoneCode87/GrafApp/main/update/resources.neu"
 }
