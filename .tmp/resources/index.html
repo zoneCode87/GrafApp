@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/pure-min.css">
+    <link rel="stylesheet" href="./css/notyf.min.css">
+    <link rel="stylesheet" href="./css/styles.css">
+    <title>GrafApp - Sensor Dashboard</title>
+</head>
+
+<body>
+    <div class="app-container">
+      
+        <header class="toolbar">
+            <div class="toolbar-group app-branding" style="display: flex; align-items: center; gap: 12px; margin-right: 15px; padding-right: 15px; border-right: 1px solid #333;">
+                <div class="logo-container" style="background: #00FFFF; color: #050505; padding: 6px 8px; border-radius: 4px; font-size: 1.4rem; box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div class="brand-text" style="display: flex; flex-direction: column; line-height: 1.2;">
+                    <span class="app-name" style="font-weight: 900; font-size: 1.2rem; color: #fff; letter-spacing: 1px;">GrafApp <span style="color: #00FFFF; font-size: 0.8rem;">xxxx</span></span>
+                    <span class="company-name" style="font-size: 0.7rem; color: #aaa; letter-spacing: 0.5px; font-family: monospace;">Rook raam</span>
+                </div>
+            </div>
+            <div class="toolbar-group">
+                <select id="comPortList" class="pure-input-1-2">
+                    <option value="">Searching for ports...</option>
+                </select>
+                <button class="pure-button btn-primary" id="btnConnect">
+                    <i class="fa-solid fa-link"></i> Connect
+                </button>
+            </div>
+            
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-group">
+                <button class="pure-button btn-ghost btn-play" id="btnPlay">
+                    <i class="fa-solid fa-play"></i> Play
+                </button>
+                <button class="pure-button btn-ghost btn-stop" id="btnStop">
+                    <i class="fa-solid fa-stop"></i> Stop
+                </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-group">
+                <button class="pure-button btn-primary" id="btnViewDashboard">
+                    <i class="fa-solid fa-border-all"></i> Dashboard
+                </button>
+                <button class="pure-button btn-ghost" id="btnViewGraph">
+                    <i class="fa-solid fa-chart-line"></i> Create Graph
+                </button>
+                <button class="pure-button btn-ghost" id="btnCsv">
+                    <i class="fa-solid fa-file-csv"></i> Save CSV
+                </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-group right-align">
+                <button class="pure-button btn-icon-only" id="btnSettings" title="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <main id="view-dashboard" class="view-active">
+            <div class="sensor-grid" id="sensorGrid"></div>
+        </main>
+      
+        <main id="view-graphs" class="view-hidden">
+            <div class="graph-toolbar">
+                <h2 class="graph-title">Live Data Graphs</h2>
+                <button class="pure-button btn-primary" id="btnAddGraph">
+                    <i class="fa-solid fa-plus"></i> Add New Graph
+                </button>
+            </div>
+            
+            <div class="graph-grid" id="graphContainer">
+                <div class="graph-placeholder">
+                    <i class="fa-solid fa-chart-area"></i>
+                    <p>No graphs created yet. Click "Add New Graph" to start.</p>
+                </div>
+            </div>
+        </main>
+
+        <div id="settingsModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-sliders"></i> Sensor Configuration</h2>
+                    <button class="pure-button btn-ghost" id="btnCloseSettings">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="table-scroll-container">
+                        <table class="pure-table pure-table-horizontal" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>CH</th>
+                                    <th>Name</th>
+                                    <th>Unit</th>
+                                    <th>Min (Raw)</th>
+                                    <th>Max (Raw)</th>
+                                    <th><i class="fa-solid fa-arrow-right"></i></th>
+                                    <th>Target Min</th>
+                                    <th>Target Max</th>
+                                    <th>Map</th>
+                                    <th>Time(s)</th>
+                                    <th>Average</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settingsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button class="pure-button" id="btnResetSettings" style="background-color: #c0392b; color: white;">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                    <button class="pure-button btn-primary" id="btnSaveSettings">
+                        <i class="fa-solid fa-floppy-disk"></i> Save All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addGraphModal" class="modal-overlay hidden">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-chart-line"></i> Add New Graph</h2>
+                    <button class="pure-button btn-ghost" id="btnCloseGraphModal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; background: #1a1d24; padding: 12px; border-radius: 6px;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graphType" value="basic" checked> Basic Sensor
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graphType" value="equation"> Math Equation
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="graphType" value="csv"> Import CSV File
+                        </label>
+                    </div>
+
+                    <div id="basicGraphSection">
+                        <label style="display: block; margin-bottom: 5px; color: #ccc;">Select Sensors (Max 3):</label>
+                        <div id="sensorCheckboxes">
+                            </div>
+                    </div>
+
+                    <div id="equationGraphSection" class="hidden">
+                        <label style="display: block; margin-bottom: 5px; color: #ccc;">Graph Name:</label>
+                        <input type="text" id="eqGraphName" placeholder="e.g. Temperature Difference" style="width: 100%; padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; margin-bottom: 15px; box-sizing: border-box;">
+                        
+                        <label style="display: block; margin-bottom: 5px; color: #ccc;">Equation:</label>
+                        <input type="text" id="eqGraphFormula" placeholder="e.g. ch0 + (ch1 * 2)" style="width: 100%; padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; border-radius: 4px; font-family: monospace; box-sizing: border-box;">
+                        
+                        <div style="margin-top: 15px; background: #1a1d24; padding: 10px; border-radius: 4px; font-size: 0.85rem;">
+                            <strong style="color: #ccc;">Available Variables:</strong>
+                            <p id="availableVarsList" style="color: #00FFFF; margin: 5px 0 0 0; word-wrap: break-word;"></p>
+                            <small style="color: #94a3b8; display: block; margin-top: 5px;">* Use exact variable names. Supported operators: +, -, *, /, (, )</small>
+                        </div>
+                    </div>
+
+                    <div id="csvGraphSection" class="hidden">
+                        <div style="background: #1a1d24; padding: 30px 15px; border-radius: 6px; text-align: center; border: 1px dashed #444;">
+                            <i class="fa-solid fa-file-csv fa-3x" style="color: #00FFFF; margin-bottom: 15px;"></i>
+                            <p style="color: #ccc; font-family: monospace; font-size: 14px; margin: 0;">
+                                A file browser will open to select the CSV file <br> once you click "Create Graph".
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer" style="text-align: right; margin-top: 20px;">
+                    <button class="pure-button btn-primary" id="btnConfirmAddGraph">
+                        <i class="fa-solid fa-check"></i> Create Graph
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script src="./js/plotly-2.32.0.min.js"></script>
+    <script src="./js/notyf.min.js"></script>
+    <script src="/js/neutralino.js"></script>
+    <script src="/js/main.js" type="module"></script>
+</body>
+</html>

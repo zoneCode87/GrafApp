@@ -19,7 +19,8 @@
     "window.*",
     "events.*",
     "storage.*",
-    "filesystem.*"
+    "filesystem.*",
+    "filesystem.writeBinaryFile"
 ],
   "globalVariables": {
     "TEST1": "Hello",
