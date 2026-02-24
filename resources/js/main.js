@@ -4,6 +4,8 @@
 import { SensorDashboard } from './sensor.js';
 import { StorageManager } from './storg.js';
 import { UIManager } from './ui_manager.js';
+var notyf = new Notyf();
+
 
 // تهيئة بيئة Neutralino أولاً قبل استدعاء أي أوامر أخرى
 Neutralino.init();
@@ -245,27 +247,26 @@ async function handleMessageDriver(Message){
 
 async function checkForUpdates() {
     try {
-        // هذا رابط ملف manifest من المستودع الخاص بك على جيتهاب (رابط Raw)
-        // إذا كان مسار مشروعك مختلف عن zonecode87/grafapp الرجاء تعديله
-        const manifestUrl = "http://raw.githubusercontent.com/zoneCode87/GrafApp/refs/heads/main/manifest.json";
-        
-        console.log("جاري البحث عن تحديثات...");
+        const manifestUrl = "https://raw.githubusercontent.com/zoneCode87/GrafApp/refs/heads/main/manifest.json";
         let manifest = await Neutralino.updater.checkForUpdates(manifestUrl);
 
         if (manifest.version !== NL_APPVERSION) {
-            console.log(`يوجد تحديث جديد: الإصدار ${manifest.version}`);            
-            // هنا ممكن تطلع تنبيه للمستخدم باستخدام Notyf اللي بتستخدمه بمشروعك
-            // notyf.success('يوجد تحديث جديد، جاري التحميل...');
-
+            console.log(`New update available: Version ${manifest.version}`);            
+            notyf.success(`New update found.${manifest.version} Downloading...`);
+            
             await Neutralino.updater.install();
-            console.log("تم تثبيت التحديث بنجاح. سيتم إعادة التشغيل...");
-            // إعادة تشغيل التطبيق لتطبيق التحديث
+
+            console.log("Update installed successfully. Restarting...");
+            notyf.success('Update installed. Restarting...'); 
+            
             await Neutralino.app.restartProcess();
         } else {
-            console.log("التطبيق محدث لآخر إصدار.");
+            console.log("App is up to date.");
+            notyf.success('App is up to date.'); 
         }
     } catch (err) {
-        console.error("فشل البحث عن تحديثات:", err);
+        console.error("Failed to check for updates:", err);
+        notyf.error('Failed to check for updates.'); 
     }
 }
 
