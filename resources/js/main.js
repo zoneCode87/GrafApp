@@ -253,16 +253,14 @@ async function checkForUpdates() {
         let manifest = await Neutralino.updater.checkForUpdates(manifestUrl);
 
         if (manifest.version !== NL_APPVERSION) {
-            console.log(`يوجد تحديث جديد: الإصدار ${manifest.version}`);
-            
+            console.log(`يوجد تحديث جديد: الإصدار ${manifest.version}`);            
             // هنا ممكن تطلع تنبيه للمستخدم باستخدام Notyf اللي بتستخدمه بمشروعك
             // notyf.success('يوجد تحديث جديد، جاري التحميل...');
 
-            await Neutralino.updater.install();
+            //await Neutralino.updater.install();
             console.log("تم تثبيت التحديث بنجاح. سيتم إعادة التشغيل...");
-            
             // إعادة تشغيل التطبيق لتطبيق التحديث
-            await Neutralino.app.restartProcess();
+            //await Neutralino.app.restartProcess();
         } else {
             console.log("التطبيق محدث لآخر إصدار.");
         }
