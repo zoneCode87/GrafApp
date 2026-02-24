@@ -1,4 +1,4 @@
-// resources/js/graph.js
+// resources/js/Graph.js
 
 export class GraphManager {
     constructor(containerId) {
@@ -7,6 +7,7 @@ export class GraphManager {
         this.maxDataPoints = 5000;
         this.graphCounter = 0;
         this._equationCache = new Map();
+        this.onGraphDeleted = null;
     }
 
     addBasicGraph(sensorIds, sensorNames) {
@@ -26,9 +27,18 @@ export class GraphManager {
         this.createGraphUI(gId, sensorNames.join(' & '), 'basic', sensorIds, null, traces);
     }
 
-    addEquationGraph(graphName, equationString) {
-        this.graphCounter++;
-        const gId = `eq_${this.graphCounter}`;
+    // --- تم التعديل هنا ليدعم الـ ID المحفوظ مسبقاً ويحتفظ باسم المعادلة ---
+    addEquationGraph(graphName, equationString, existingId = null) {
+        let gId;
+        if (existingId) {
+            gId = existingId;
+            let num = parseInt(existingId.split('_')[1]);
+            if (!isNaN(num) && num >= this.graphCounter) this.graphCounter = num;
+        } else {
+            this.graphCounter++;
+            gId = `eq_${this.graphCounter}`;
+        }
+        
         const trace = [{
             x: [], y: [],
             mode: 'lines+markers',
@@ -37,23 +47,79 @@ export class GraphManager {
             marker: { size: 5, color: '#050505', line: { width: 1.5, color: '#00FFFF' } },
             hovertemplate: 'Val: %{y:.2f}<extra></extra>'
         }];
+        
         this.createGraphUI(gId, graphName, 'equation', null, equationString, trace);
+        this.graphs[gId].name = graphName; // حفظ اسم المعادلة لاستخدامه لاحقاً
+        return gId; // إرجاع الـ ID لإنشاء الكرت الخاص به
+    }
+
+    addCSVGraph(fileName, csvContent) {
+        this.graphCounter++;
+        const gId = `csv_${this.graphCounter}`;
+        
+        const lines = csvContent.trim().split('\n');
+        if (lines.length < 2) return;
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        let timeIndex = headers.findIndex(h => h.toLowerCase() === 'time');
+        if (timeIndex === -1) timeIndex = 0;
+
+        const dataIndices = [];
+        const dataNames = [];
+        
+        headers.forEach((h, i) => {
+            if (h.toLowerCase() !== 'time' && h.toLowerCase() !== 'no' && h !== '#') {
+                dataIndices.push(i);
+                dataNames.push(h);
+            }
+        });
+
+        if (dataIndices.length === 0) return;
+
+        const xData = [];
+        const yDataArray = dataIndices.map(() => []);
+        const todayDateStr = new Date().toISOString().split('T')[0];
+
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.trim());
+            if (cols.length < headers.length) continue;
+
+            let timeVal = cols[timeIndex];
+            if(timeVal.includes(':') && !timeVal.includes('-') && !timeVal.includes('/')) {
+                timeVal = `${todayDateStr} ${timeVal}`;
+            }
+            xData.push(timeVal);
+
+            dataIndices.forEach((colIndex, yIdx) => {
+                const val = parseFloat(cols[colIndex]);
+                yDataArray[yIdx].push(isNaN(val) ? null : val);
+            });
+        }
+
+        const scadaColors = ['#00FF00', '#00FFFF', '#FFB000', '#FF2A2A', '#CC00FF', '#FFFFFF'];
+        const traces = yDataArray.map((yData, index) => ({
+            x: xData, 
+            y: yData,
+            mode: 'lines',
+            name: dataNames[index],
+            line: { color: scadaColors[index % scadaColors.length], width: 1.5, shape: 'linear' },
+            hovertemplate: 'Val: %{y:.2f}<extra></extra>' 
+        }));
+
+        this.createGraphUI(gId, `CSV: ${fileName.replace('.csv','')}`, 'csv', null, null, traces);
     }
 
     createGraphUI(graphId, graphTitle, type, sensorIds, equation, tracesData) {
         const placeholder = this.container.querySelector('.graph-placeholder');
         if (placeholder) placeholder.style.display = 'none';
 
-        // ── Wrapper ───────────────────────────────────────────────────────────
         const wrapper = document.createElement('div');
         wrapper.className = 'graph-wrapper';
         wrapper.style.cssText = 'width:100%;box-sizing:border-box;background-color:#050505;padding:15px;padding-top:60px;border-radius:4px;border:1px solid #1f2937;position:relative;overflow:hidden;box-shadow:inset 0 0 10px rgba(0,0,0,0.8);margin-bottom:12px;';
 
-        // ── Toolbar ───────────────────────────────────────────────────────────
         const controlsDiv = document.createElement('div');
         controlsDiv.style.cssText = 'position:absolute;top:10px;left:10px;right:10px;z-index:10;display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
 
-        // helper — اسم البارامتر tooltip مش title عشان ما يتعارض مع graphTitle
         const mkBtn = (html, tooltip, bgColor, textColor, borderColor) => {
             const b = document.createElement('button');
             b.innerHTML = html;
@@ -88,7 +154,6 @@ export class GraphManager {
         );
         wrapper.appendChild(controlsDiv);
 
-        // ── Equation hint ─────────────────────────────────────────────────────
         if (type === 'equation') {
             const eqHint = document.createElement('div');
             eqHint.innerHTML = `<i class="fa-solid fa-calculator"></i> <code>f(x) = ${equation}</code>`;
@@ -96,20 +161,18 @@ export class GraphManager {
             wrapper.appendChild(eqHint);
         }
 
-        // ── Plot div ──────────────────────────────────────────────────────────
         const plotDiv = document.createElement('div');
         plotDiv.id = `plot-${graphId}`;
         plotDiv.style.cssText = 'width:100%;height:300px;';
         wrapper.appendChild(plotDiv);
         this.container.appendChild(wrapper);
 
-        // ── Graph state ───────────────────────────────────────────────────────
         const g = {
             div: plotDiv,
             type,
             sensorIds,
             equation,
-            autoScroll: true,
+            autoScroll: type !== 'csv',
             windowMin: Infinity,
             windowMax: -Infinity,
             _frameCount: 0,
@@ -117,7 +180,6 @@ export class GraphManager {
         };
         this.graphs[graphId] = g;
 
-        // ── Auto-scroll UI ────────────────────────────────────────────────────
         const setAutoScroll = (on) => {
             g.autoScroll = on;
             if (on) {
@@ -133,7 +195,8 @@ export class GraphManager {
             }
         };
 
-        // ── Button handlers ───────────────────────────────────────────────────
+        if (type === 'csv') setAutoScroll(false);
+
         autoScrollBtn.onclick = () => setAutoScroll(!g.autoScroll);
 
         plotDiv.addEventListener('dblclick', () => {
@@ -175,7 +238,6 @@ export class GraphManager {
         yUpBtn.onclick   = () => scrollY(1);
         yDownBtn.onclick = () => scrollY(-1);
 
-        // Wheel: plain → zoom X  |  Shift+wheel → scroll Y
         plotDiv.addEventListener('wheel', (e) => {
             e.preventDefault();
             const layout = plotDiv.layout;
@@ -201,7 +263,6 @@ export class GraphManager {
             }
         }, { passive: false });
 
-        // CSV
         csvBtn.onclick = async () => {
             try {
                 const traces = g.div.data;
@@ -231,17 +292,19 @@ export class GraphManager {
             } catch (err) { console.error(err); }
         };
 
-        // Delete
         deleteBtn.onclick = () => {
             Plotly.purge(plotDiv);
             delete this.graphs[graphId];
             wrapper.remove();
-            if (Object.keys(this.graphs).length === 0 && placeholder) {
-                placeholder.style.display = 'block';
-            }
+            
+            // --- حذف الكرت الافتراضي (Virtual Card) من لوحة التحكم عند الحذف ---
+            let virtualCard = document.getElementById(`card-${graphId}`);
+            if(virtualCard) virtualCard.remove();
+            
+            if (Object.keys(this.graphs).length === 0 && placeholder) placeholder.style.display = 'block';
+            if (this.onGraphDeleted) this.onGraphDeleted(graphId);
         };
 
-        // ── Plotly init ───────────────────────────────────────────────────────
         const layout = {
             title: {
                 text: `[ SYS: ${graphTitle.toUpperCase()} ]`,
@@ -276,7 +339,6 @@ export class GraphManager {
             dragmode: 'pan'
         };
 
-        // ✅ نضيف plotly_relayout listener داخل .then() — بعد ما Plotly يهيئ الـ element
         Plotly.newPlot(plotDiv, tracesData, layout, {
             responsive: true,
             displayModeBar: false,
@@ -297,7 +359,6 @@ export class GraphManager {
         });
     }
 
-    // ── evaluateEquation (cached) ─────────────────────────────────────────────
     evaluateEquation(equation, sensorDataObj) {
         try {
             let fn = this._equationCache.get(equation);
@@ -312,7 +373,6 @@ export class GraphManager {
         }
     }
 
-    // ── updateAllGraphs ───────────────────────────────────────────────────────
     updateAllGraphs(sensorDataObj) {
         const now = new Date();
         const nowMs = now.getTime();
@@ -323,6 +383,8 @@ export class GraphManager {
 
         for (const gId in this.graphs) {
             const g = this.graphs[gId];
+            if (g.type === 'csv') continue;
+
             const newYValues = [];
 
             if (g.type === 'basic') {
@@ -344,6 +406,15 @@ export class GraphManager {
                 if (val !== null && !isNaN(val)) {
                     Plotly.extendTraces(g.div, { x: [[now]], y: [[val]] }, [0], this.maxDataPoints);
                     newYValues.push(val);
+                    
+                    // --- إضافة العبقرية هنا: إرجاع نتيجة المعادلة للبيانات الحية لربط المعادلات معاً ---
+                    sensorDataObj[gId] = val;
+                    
+                    // --- تحديث قيمة الكرت الافتراضي في لوحة الحساسات بشكل مباشر ---
+                    const virtualCardVal = document.getElementById(`val-${gId}`);
+                    if (virtualCardVal) {
+                        virtualCardVal.innerText = val.toFixed(2);
+                    }
                 }
             }
 

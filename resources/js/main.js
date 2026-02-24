@@ -230,8 +230,11 @@ async function handleMessageDriver(Message){
             console.log(isSystemConnected);
             ui.styleConectBtn(isSystemConnected);
             ui.style_Run_Stop_btn(isRun); 
-            await config.loadAll();
+            await config.loadAll(); // تحميل إعدادات الحساسات والرسوم
             
+            // +++++ إضافة جديدة: رسم المخططات البيانية المحفوظة +++++
+            ui.loadSavedGraphs();
+            // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
 }
 
