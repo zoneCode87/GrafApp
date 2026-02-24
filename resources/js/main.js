@@ -247,7 +247,7 @@ async function checkForUpdates() {
     try {
         // هذا رابط ملف manifest من المستودع الخاص بك على جيتهاب (رابط Raw)
         // إذا كان مسار مشروعك مختلف عن zonecode87/grafapp الرجاء تعديله
-        const manifestUrl = "https://raw.githubusercontent.com/zonecode87/grafapp/main/manifest.json";
+        const manifestUrl = "https://raw.githubusercontent.com/zoneCode87/GrafApp/refs/heads/main/manifest.json";
         
         console.log("جاري البحث عن تحديثات...");
         let manifest = await Neutralino.updater.checkForUpdates(manifestUrl);
