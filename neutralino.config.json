@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
-  "applicationId": "js.neutralino.sample",
+  "applicationId": "js.neutralino.grafapp",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -13,12 +13,6 @@
     "enabled": true,
     "writeToLogFile": true
   },
-  "extensions": [
-    {
-      "id": "daqBackend",
-      "command": "python extensions/extension.py"
-    }
-  ],
 "nativeAllowList": [
     "app.*",
     "os.*",

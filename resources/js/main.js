@@ -213,6 +213,7 @@ async function initializeApp() {
      // تحميل الإعدادات من الهارد ديسك أولاً
     await refreshComPorts(); // جلب المنافذ
     await startHardwareDriver(); // تشغيل الـ C++
+    await checkForUpdates();
 }
 
 window.addEventListener('beforeunload', () => {
@@ -240,6 +241,34 @@ async function handleMessageDriver(Message){
             ui.loadSavedGraphs();
             // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
+}
+
+async function checkForUpdates() {
+    try {
+        // هذا رابط ملف manifest من المستودع الخاص بك على جيتهاب (رابط Raw)
+        // إذا كان مسار مشروعك مختلف عن zonecode87/grafapp الرجاء تعديله
+        const manifestUrl = "https://raw.githubusercontent.com/zonecode87/grafapp/main/manifest.json";
+        
+        console.log("جاري البحث عن تحديثات...");
+        let manifest = await Neutralino.updater.checkForUpdates(manifestUrl);
+
+        if (manifest.version !== NL_APPVERSION) {
+            console.log(`يوجد تحديث جديد: الإصدار ${manifest.version}`);
+            
+            // هنا ممكن تطلع تنبيه للمستخدم باستخدام Notyf اللي بتستخدمه بمشروعك
+            // notyf.success('يوجد تحديث جديد، جاري التحميل...');
+
+            await Neutralino.updater.install();
+            console.log("تم تثبيت التحديث بنجاح. سيتم إعادة التشغيل...");
+            
+            // إعادة تشغيل التطبيق لتطبيق التحديث
+            await Neutralino.app.restartProcess();
+        } else {
+            console.log("التطبيق محدث لآخر إصدار.");
+        }
+    } catch (err) {
+        console.error("فشل البحث عن تحديثات:", err);
+    }
 }
 
 ui.save_csv_file();
