@@ -76,7 +76,7 @@
     }
   },
   "cli": {
-    "binaryName": "GrafApp",
+    "binaryName": "test1",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",
