@@ -481,6 +481,7 @@ export class UIManager {
 
     async saveSettings() {
         let boardKeys = Object.keys(this.config.data);
+
         if (boardKeys.length === 0) return;
         
         let mainBoardId = boardKeys[0].replace('board_', '');
