@@ -282,6 +282,7 @@ export class GraphManager {
         csvBtn.onclick = async () => {
             try {
                 const traces = g.div.data;
+                 
                 if (!traces?.length || !traces[0].x?.length) {
                     // تم التعديل هنا: استخدام Notyf ورسالة باللغة الإنجليزية
                     this.notyf.open({ type: 'warning', message: 'No data available to export yet!' });

@@ -80,6 +80,7 @@ void handleInputFromUI(SerialPort* arduino) {
         std::cout << "C++ Processed: [" << inputFromJS << "]\n" << std::flush;
         if(inputFromJS == "DisConect"){
             std::cout<<"disConect Here"<<std::endl;
+            keepRunning = false;
         }
     }
     std::cout << "JS thread stopped." << std::endl;

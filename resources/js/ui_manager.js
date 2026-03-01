@@ -58,6 +58,7 @@ export class UIManager {
         this.sensorCheckboxes = document.getElementById('sensorCheckboxes');
         this.eqGraphName = document.getElementById('eqGraphName');
         this.eqGraphFormula = document.getElementById('eqGraphFormula');
+        this.eqUnit = document.getElementById("eqGraphUnit");
         this.availableVarsList = document.getElementById('availableVarsList');
 
         this.csvBuffer = []; 
@@ -219,7 +220,7 @@ export class UIManager {
         }
     }
 
-    createVirtualSensorCard(id, name) {
+    createVirtualSensorCard(id, name , unit = null) {
         const grid = document.getElementById('sensorGrid');
         if(!grid || document.getElementById(`card-${id}`)) return; 
         
@@ -233,8 +234,8 @@ export class UIManager {
                 <i class="fa-solid fa-calculator"></i> ${name}
             </div>
             <div id="val-${id}" style="font-size: 2rem; color: #fff; font-weight: bold; font-family: 'Courier New', monospace;">
-                0.00
-            </div>
+                0.00 <spam>${unit}<spam>
+             </div>
         `;
         grid.appendChild(card);
     }
@@ -364,13 +365,15 @@ export class UIManager {
         } else {
             let gName = this.eqGraphName.value.trim();
             let gFormula = this.eqGraphFormula.value.trim();
+            let gUnit  = this.eqUnit.value.trim();
+
             if (!gName || !gFormula) {
                 this.notyf.error("Please provide both a name and a formula!");
                 return;
             }
             
             let gId = this.graphManager.addEquationGraph(gName, gFormula);
-            this.createVirtualSensorCard(gId, gName);
+            this.createVirtualSensorCard(gId, gName , gUnit);
             
             graphConfig.type = 'equation';
             graphConfig.id = gId; 

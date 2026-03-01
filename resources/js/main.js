@@ -132,7 +132,7 @@ btnConnect.addEventListener('click', async () => {
 });
 
 // ==========================================
-// 5. الاستماع لردود المحرك (الاستقبال الذكي)
+// 5. الاستماع لردود المحرك
 // ==========================================
 Neutralino.events.on('spawnedProcess', (event) => {
     if(event.detail.id === driverProcessId) {
@@ -218,13 +218,15 @@ async function initializeApp() {
     await checkForUpdates();
 }
 
+//  جدث مهم لاطفاء البورد عند اعادة التشغيل
 window.addEventListener('beforeunload', () => {
     if (driverProcessId !== null) {
-        Neutralino.os.execCommand(`taskkill /PID ${driverProcessId} /F /T`);
-        console.log("🛑 تم قتل المحرك وتحرير البورت بسبب تحديث الصفحة.");
+        Neutralino.os.updateSpawnedProcess(driverProcessId, 'stdIn', 'DisConect\n');
+        setTimeout(() => {
+            Neutralino.os.execCommand(`taskkill /PID ${driverProcessId} /F /T`);
+        }, 150);
     }
 });
-
 // ==========================================
 // 7. الكماند الي بتيجي من ال driver 
 // ==========================================
@@ -241,7 +243,6 @@ async function handleMessageDriver(Message){
             
             // +++++ إضافة جديدة: رسم المخططات البيانية المحفوظة +++++
             ui.loadSavedGraphs();
-            // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
 }
 
