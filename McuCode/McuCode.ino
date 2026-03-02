@@ -1,7 +1,7 @@
 struct stdataSend {
   uint8_t header = 0xf1;
-  uint8_t id_board = 1;
-  uint8_t size = 10; // حجم ثابت
+  uint8_t id_board = 2;
+  uint8_t size = 5; // حجم ثابت
   float sensor_list[30]; // المصفوفة بحجم ثابت
   uint32_t check_sum = 0;
 };
@@ -70,11 +70,8 @@ void sendBinaryData() {
   data.sensor_list[2] = 7;
   data.sensor_list[3] = 2.0; 
   data.sensor_list[4] = 260;
-  data.sensor_list[5] =5;
-  data.sensor_list[6] = 7;
-  data.sensor_list[7] = 2.0; 
-  data.sensor_list[8] = 7;
-  data.sensor_list[9] = 2.0;
+
+
   data.check_sum = calculate_chk_sum(data);
   Serial.write((uint8_t*)&data, sizeof(data));
 } 

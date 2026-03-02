@@ -220,7 +220,7 @@ export class UIManager {
         }
     }
 
-    createVirtualSensorCard(id, name , unit = null) {
+    createVirtualSensorCard(id, name , unit = ' ') {
         const grid = document.getElementById('sensorGrid');
         if(!grid || document.getElementById(`card-${id}`)) return; 
         
@@ -234,7 +234,7 @@ export class UIManager {
                 <i class="fa-solid fa-calculator"></i> ${name}
             </div>
             <div id="val-${id}" style="font-size: 2rem; color: #fff; font-weight: bold; font-family: 'Courier New', monospace;">
-                0.00 <spam>${unit}<spam>
+                0.00 <span style="font-size: 1rem; color: #aaa;">${unit || ''}
              </div>
         `;
         grid.appendChild(card);
@@ -379,6 +379,7 @@ export class UIManager {
             graphConfig.id = gId; 
             graphConfig.equationName = gName;
             graphConfig.equationFormula = gFormula;
+            graphConfig.equationUnit = gUnit;
 
             this.notyf.success("Equation Graph generated successfully.");
         }
@@ -409,7 +410,7 @@ export class UIManager {
         }
     }
 
-    loadSavedGraphs() {
+loadSavedGraphs() {
         let boardKeys = Object.keys(this.config.data);
         if (boardKeys.length === 0) return;
         let mainBoard = boardKeys[0];
@@ -424,13 +425,16 @@ export class UIManager {
                     this.graphManager.addBasicGraph(g.sensorIds, g.sensorNames);
                 } else if (g.type === 'equation') {
                     let gId = this.graphManager.addEquationGraph(g.equationName, g.equationFormula, g.id);
-                    this.createVirtualSensorCard(gId, g.equationName);
+                    
+                    // استعادة الوحدة المخزنة وتمريرها
+                    this.graphManager.graphs[gId].unit = g.equationUnit || '';
+                    this.createVirtualSensorCard(gId, g.equationName, g.equationUnit || '');
                 }
             });
         }
     }
 
-    removeGraphFromStorage(graphId) {
+removeGraphFromStorage(graphId) {
         let boardKeys = Object.keys(this.config.data);
         if (boardKeys.length === 0) return;
         let mainBoard = boardKeys[0];
@@ -442,7 +446,13 @@ export class UIManager {
                 if (g.type === 'basic') {
                     this.config.data[mainBoard].graphs.push({ type: 'basic', id: id, sensorIds: g.sensorIds, sensorNames: g.sensorIds.map(sId => document.getElementById(`name-${sId}`)?.innerText || sId) });
                 } else if (g.type === 'equation') {
-                    this.config.data[mainBoard].graphs.push({ type: 'equation', id: id, equationName: g.name, equationFormula: g.equation });
+                    this.config.data[mainBoard].graphs.push({ 
+                        type: 'equation', 
+                        id: id, 
+                        equationName: g.name, 
+                        equationFormula: g.equation,
+                        equationUnit: g.unit || '' // <-- الاحتفاظ بالوحدة السابقة
+                    });
                 }
             }
             if(typeof this.config.saveAll === 'function') this.config.saveAll();

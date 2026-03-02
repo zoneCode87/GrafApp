@@ -44,7 +44,8 @@ export class GraphManager {
         this.createGraphUI(gId, sensorNames.join(' & '), 'basic', sensorIds, null, traces);
     }
 
-    addEquationGraph(graphName, equationString, existingId = null) {
+// تمت إضافة unit = '' في المعطيات
+    addEquationGraph(graphName, equationString, existingId = null, unit = '') {
         let gId;
         if (existingId) {
             gId = existingId;
@@ -66,6 +67,7 @@ export class GraphManager {
         
         this.createGraphUI(gId, graphName, 'equation', null, equationString, trace);
         this.graphs[gId].name = graphName; 
+        this.graphs[gId].unit = unit; // <-- حفظ الوحدة هنا
         return gId; 
     }
 
@@ -429,7 +431,7 @@ export class GraphManager {
                     
                     const virtualCardVal = document.getElementById(`val-${gId}`);
                     if (virtualCardVal) {
-                        virtualCardVal.innerText = val.toFixed(2);
+                        virtualCardVal.innerHTML = `${val.toFixed(2)} <span style="font-size: 1rem; color: #aaa;">${g.unit || ''}</span>`
                     }
                 }
             }

@@ -107,6 +107,7 @@ main {
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
+  min-height: 90px;
   display: flex; flex-direction: column;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
@@ -115,6 +116,7 @@ main {
 .sensor-card:hover {
   border-color: var(--accent-blue);
   box-shadow: 0 6px 15px rgba(14, 165, 233, 0.1);
+  cursor: pointer;
 }
 
 .input-title {
@@ -508,4 +510,8 @@ select#comPortList option {
 .sensor-select-item input[type="checkbox"]:checked + label::after {
     content: '\f14a'; /* مربع بداخله صح */
     font-weight: 900;
+}
+
+.logoHader{
+  max-width: 100px;
 }
