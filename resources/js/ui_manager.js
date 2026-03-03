@@ -9,25 +9,35 @@ export class UIManager {
         this.config = configManager;
         this.graphManager = new GraphManager('graphContainer'); 
         
-        this.graphManager.onGraphDeleted = (graphId) => {
-            this.removeGraphFromStorage(graphId);
+        this.activeLoadedBoardId = null; // تتبع البورد المعروض حالياً على الشاشة
+
+        // ++++++ الحل الجذري: اعتراض ذكي للبيانات الحية ++++++
+        const originalUpdate = this.graphManager.updateAllGraphs.bind(this.graphManager);
+        this.graphManager.updateAllGraphs = (sensorDataObj, currentBoardId) => {
+            // إذا تغير البورد أو كانت أول مرة تصل فيها بيانات تحمل ID البورد
+            if (this.activeLoadedBoardId !== currentBoardId && currentBoardId) {
+                this.activeLoadedBoardId = currentBoardId;
+                this.graphManager.currentBoardId = currentBoardId;
+                console.log(`🔄 Switching Graphs to Active Board ID: ${currentBoardId}`);
+                this.loadSavedGraphs(); // تحميل الرسوم الصحيحة الخاصة بهذا البورد فوراً
+            }
+            originalUpdate(sensorDataObj, currentBoardId);
+        };
+        // +++++++++++++++++++++++++++++++++++++++++++++++
+
+        this.graphManager.onGraphDeleted = async (graphId) => {
+            await this.removeGraphFromStorage(graphId);
         };
 
-        // Initialize Notyf for professional notifications
+        // Initialize Notyf
         this.notyf = new Notyf({
             duration: 3000,
             position: { x: 'right', y: 'top' },
-            types: [
-                {
-                    type: 'warning',
-                    background: 'orange',
-                    icon: {
-                        className: 'fa-solid fa-triangle-exclamation',
-                        tagName: 'i',
-                        color: 'white'
-                    }
-                }
-            ]
+            types: [{
+                type: 'warning',
+                background: 'orange',
+                icon: { className: 'fa-solid fa-triangle-exclamation', tagName: 'i', color: 'white' }
+            }]
         });
 
         this.btnViewDashboard = document.getElementById('btnViewDashboard');
@@ -69,13 +79,21 @@ export class UIManager {
         this.initEvents();        
     }
 
+    // جلب مفتاح البورد الحالي بثقة تامة
+    getActiveBoardKey() {
+        if (this.activeLoadedBoardId) return `board_${this.activeLoadedBoardId}`;
+        if (this.graphManager.currentBoardId) return `board_${this.graphManager.currentBoardId}`;
+        
+        let keys = Object.keys(this.config.data);
+        return keys.length > 0 ? keys[0] : null;
+    }
+
     logCSVFrame(sensorsArray) {
         if (this.csvBuffer.length === 0) {
             this.csvHeaders.clear();
             this.csvHeaders.set('No', '#'); 
             this.csvHeaders.set('Time', 'Time'); 
         }
-
         let now = new Date();
         let hours = String(now.getHours()).padStart(2, '0');
         let minutes = String(now.getMinutes()).padStart(2, '0');
@@ -96,7 +114,6 @@ export class UIManager {
             this.csvHeaders.set(sensorKey, displayName); 
             row[sensorKey] = displayValue;      
         });
-
         this.csvBuffer.push(row);
     }
 
@@ -110,7 +127,6 @@ export class UIManager {
                 this.notyf.error("No recorded data available to save!");
                 return;
             }
-
             try {
                 let keys = Array.from(this.csvHeaders.keys()); 
                 let displayNames = keys.map(k => this.csvHeaders.get(k)); 
@@ -137,7 +153,6 @@ export class UIManager {
                     }
                 }
             } catch (err) {
-                console.error("❌ File Save Error:", err);
                 this.notyf.error("An error occurred while saving the CSV file.");
             }
         });    
@@ -179,7 +194,7 @@ export class UIManager {
 
         if (this.btnAddGraph) this.btnAddGraph.addEventListener('click', () => this.openGraphModal());
         if (this.btnCloseGraphModal) this.btnCloseGraphModal.addEventListener('click', () => this.closeGraphModal());
-        if (this.btnConfirmAddGraph) this.btnConfirmAddGraph.addEventListener('click', () => this.createNewGraph());
+        if (this.btnConfirmAddGraph) this.btnConfirmAddGraph.addEventListener('click', async () => await this.createNewGraph());
 
         if (this.graphTypeRadios) {
             this.graphTypeRadios.forEach(radio => {
@@ -206,7 +221,6 @@ export class UIManager {
             this.viewGraphs.classList.add('view-hidden');
             this.viewDashboard.classList.remove('view-hidden');
             this.viewDashboard.classList.add('view-active');
-            
             this.btnViewDashboard.classList.replace('btn-ghost', 'btn-primary');
             this.btnViewGraph.classList.replace('btn-primary', 'btn-ghost');
         } else {
@@ -214,7 +228,6 @@ export class UIManager {
             this.viewDashboard.classList.add('view-hidden');
             this.viewGraphs.classList.remove('view-hidden');
             this.viewGraphs.classList.add('view-active');
-            
             this.btnViewGraph.classList.replace('btn-ghost', 'btn-primary');
             this.btnViewDashboard.classList.replace('btn-primary', 'btn-ghost');
         }
@@ -234,7 +247,7 @@ export class UIManager {
                 <i class="fa-solid fa-calculator"></i> ${name}
             </div>
             <div id="val-${id}" style="font-size: 2rem; color: #fff; font-weight: bold; font-family: 'Courier New', monospace;">
-                0.00 <span style="font-size: 1rem; color: #aaa;">${unit || ''}
+                0.00 <span style="font-size: 1rem; color: #aaa;">${unit || ''}</span>
              </div>
         `;
         grid.appendChild(card);
@@ -249,18 +262,16 @@ export class UIManager {
         this.availableVarsList.style.gap = '8px';
         this.availableVarsList.style.marginTop = '10px';
 
-        let boardKeys = Object.keys(this.config.data);
-        if (boardKeys.length === 0) {
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey || !this.config.data[mainBoardKey]) {
             this.notyf.open({ type: 'warning', message: "No data received yet. Please wait for incoming packets." });
             return;
         }
 
-        let mainBoard = boardKeys[0];
-        let sensors = this.config.data[mainBoard];
+        let sensors = this.config.data[mainBoardKey].sensors || {};
         let vars = [];
 
         for (let sensorId in sensors) {
-            if (sensorId === 'graphs') continue; 
             let s = sensors[sensorId];
             let name = s.name || sensorId;
             
@@ -311,29 +322,54 @@ export class UIManager {
         this.eqGraphFormula.value = '';
     }
 
-    createNewGraph() {
+    // +++++ دالة المزامنة الجوهرية: تحفظ ما تراه عينك على الشاشة فوراً +++++
+    async syncGraphsToStorage() {
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey) return;
+        
+        if (!this.config.data[mainBoardKey]) this.config.data[mainBoardKey] = {};
+        
+        let currentGraphs = [];
+        for (let id in this.graphManager.graphs) {
+            let g = this.graphManager.graphs[id];
+            if (g.type === 'basic') {
+                currentGraphs.push({ 
+                    type: 'basic', 
+                    id: id, 
+                    sensorIds: g.sensorIds, 
+                    sensorNames: g.sensorIds.map(sId => document.getElementById(`name-${sId}`)?.innerText || sId) 
+                });
+            } else if (g.type === 'equation') {
+                currentGraphs.push({ 
+                    type: 'equation', 
+                    id: id, 
+                    equationName: g.name, 
+                    equationFormula: g.equation,
+                    equationUnit: g.unit || '' 
+                });
+            }
+        }
+        
+        this.config.data[mainBoardKey].graphs = currentGraphs;
+        if(typeof this.config.saveAll === 'function') {
+            await this.config.saveAll();
+        }
+    }
+
+    async createNewGraph() {
         let selectedType = document.querySelector('input[name="graphType"]:checked').value;
         
         if (selectedType === 'csv') {
-            this.importCSVAndGraph();
+            await this.importCSVAndGraph();
             this.closeGraphModal();
             return; 
         }
 
-        let boardKeys = Object.keys(this.config.data);
-        let mainBoard = boardKeys.length > 0 ? boardKeys[0] : null;
-
-        if (!mainBoard) {
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey) {
             this.notyf.error("No active board found!");
             return;
         }
-
-// التأكد من أن المتغير عبارة عن مصفوفة صالحة، وإلا قم بتهيئته كمصفوفة
-        if (!Array.isArray(this.config.data[mainBoard].graphs)) {
-            this.config.data[mainBoard].graphs = [];
-        }
-
-        let graphConfig = {};
 
         if (selectedType === 'basic') {
             let checkedBoxes = this.sensorCheckboxes.querySelectorAll('input:checked');
@@ -354,12 +390,6 @@ export class UIManager {
             });
             
             this.graphManager.addBasicGraph(ids, names);
-            
-            graphConfig.type = 'basic';
-            graphConfig.id = `basic_${Date.now()}`;
-            graphConfig.sensorIds = ids;
-            graphConfig.sensorNames = names;
-
             this.notyf.success("Basic Graph added successfully.");
 
         } else {
@@ -372,21 +402,14 @@ export class UIManager {
                 return;
             }
             
-            let gId = this.graphManager.addEquationGraph(gName, gFormula);
+            let gId = this.graphManager.addEquationGraph(gName, gFormula, null, gUnit);
             this.createVirtualSensorCard(gId, gName , gUnit);
             
-            graphConfig.type = 'equation';
-            graphConfig.id = gId; 
-            graphConfig.equationName = gName;
-            graphConfig.equationFormula = gFormula;
-            graphConfig.equationUnit = gUnit;
-
             this.notyf.success("Equation Graph generated successfully.");
         }
         
-        this.config.data[mainBoard].graphs.push(graphConfig);
-        if(typeof this.config.saveAll === 'function') this.config.saveAll();
-
+        // استدعاء دالة المزامنة لحفظ ما تمت إضافته على الشاشة
+        await this.syncGraphsToStorage();
         this.closeGraphModal();
     }
 
@@ -405,28 +428,33 @@ export class UIManager {
                 this.notyf.success("CSV file imported and graphed successfully.");
             }
         } catch (err) {
-            console.error("❌ CSV Import Error: ", err);
             this.notyf.error("Failed to open the file. Check permissions.");
         }
     }
 
-loadSavedGraphs() {
-        let boardKeys = Object.keys(this.config.data);
-        if (boardKeys.length === 0) return;
-        let mainBoard = boardKeys[0];
+    // تصفية الشاشة بالكامل قبل تحميل رسوم البورد الصحيح
+    loadSavedGraphs() {
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey || !this.config.data[mainBoardKey]) return;
 
-        let savedGraphs = this.config.data[mainBoard].graphs;
+        // 1. تنظيف الشاشة من رسوم البورد السابق
+        this.graphManager.container.querySelectorAll('.graph-wrapper').forEach(e => e.remove());
+        document.querySelectorAll('.sensor-card').forEach(card => {
+            if(card.id.startsWith('card-eq_') || card.id.startsWith('card-basic_')) {
+                card.remove();
+            }
+        });
+        this.graphManager.graphs = {};
+        this.graphManager.graphCounter = 0; // إعادة تعيين العداد
+
+        // 2. تحميل رسوم البورد الحالي
+        let savedGraphs = this.config.data[mainBoardKey].graphs;
         if (savedGraphs && Array.isArray(savedGraphs)) {
-            this.graphManager.container.querySelectorAll('.graph-wrapper').forEach(e => e.remove());
-            this.graphManager.graphs = {};
-
             savedGraphs.forEach(g => {
                 if (g.type === 'basic') {
                     this.graphManager.addBasicGraph(g.sensorIds, g.sensorNames);
                 } else if (g.type === 'equation') {
-                    let gId = this.graphManager.addEquationGraph(g.equationName, g.equationFormula, g.id);
-                    
-                    // استعادة الوحدة المخزنة وتمريرها
+                    let gId = this.graphManager.addEquationGraph(g.equationName, g.equationFormula);
                     this.graphManager.graphs[gId].unit = g.equationUnit || '';
                     this.createVirtualSensorCard(gId, g.equationName, g.equationUnit || '');
                 }
@@ -434,38 +462,18 @@ loadSavedGraphs() {
         }
     }
 
-removeGraphFromStorage(graphId) {
-        let boardKeys = Object.keys(this.config.data);
-        if (boardKeys.length === 0) return;
-        let mainBoard = boardKeys[0];
-
-        if (this.config.data[mainBoard].graphs) {
-            this.config.data[mainBoard].graphs = [];
-            for (let id in this.graphManager.graphs) {
-                let g = this.graphManager.graphs[id];
-                if (g.type === 'basic') {
-                    this.config.data[mainBoard].graphs.push({ type: 'basic', id: id, sensorIds: g.sensorIds, sensorNames: g.sensorIds.map(sId => document.getElementById(`name-${sId}`)?.innerText || sId) });
-                } else if (g.type === 'equation') {
-                    this.config.data[mainBoard].graphs.push({ 
-                        type: 'equation', 
-                        id: id, 
-                        equationName: g.name, 
-                        equationFormula: g.equation,
-                        equationUnit: g.unit || '' // <-- الاحتفاظ بالوحدة السابقة
-                    });
-                }
-            }
-            if(typeof this.config.saveAll === 'function') this.config.saveAll();
-        }
+    async removeGraphFromStorage(graphId) {
+        // بمجرد حذف الرسم من الشاشة، نقوم بمزامنة الشاشة مع الهارد ديسك فوراً
+        await this.syncGraphsToStorage();
+        this.notyf.success("Graph removed permanently.");
     }
 
     openSettingsModal() {
         this.settingsTableBody.innerHTML = ''; 
-        let boardKeys = Object.keys(this.config.data);
-        if (boardKeys.length === 0) return;
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey || !this.config.data[mainBoardKey]) return;
 
-        let mainBoard = boardKeys[0]; 
-        let sensors = this.config.data[mainBoard];
+        let sensors = this.config.data[mainBoardKey].sensors || {};
 
         for (let sensorId in sensors) {
             let s = sensors[sensorId];
@@ -493,16 +501,18 @@ removeGraphFromStorage(graphId) {
     }
 
     async saveSettings() {
-        let boardKeys = Object.keys(this.config.data);
-
-        if (boardKeys.length === 0) return;
+        let mainBoardKey = this.getActiveBoardKey();
+        if (!mainBoardKey || !this.config.data[mainBoardKey]) return;
         
-        let mainBoardId = boardKeys[0].replace('board_', '');
-        let sensors = this.config.data[boardKeys[0]];
+        let mainBoardId = mainBoardKey.replace('board_', '');
+        let sensors = this.config.data[mainBoardKey].sensors || {};
 
         for (let sensorId in sensors) {
+            let nameInput = document.getElementById(`input-name-${sensorId}`);
+            if(!nameInput) continue;
+
             let newConfig = {
-                name: document.getElementById(`input-name-${sensorId}`).value,
+                name: nameInput.value,
                 unit: document.getElementById(`input-unit-${sensorId}`).value,
                 rawMin: parseFloat(document.getElementById(`raw-min-${sensorId}`).value),
                 rawMax: parseFloat(document.getElementById(`raw-max-${sensorId}`).value),
@@ -512,6 +522,7 @@ removeGraphFromStorage(graphId) {
                 updateTime: parseFloat(document.getElementById(`update-time-${sensorId}`).value) || 0,
                 avgSamples: parseInt(document.getElementById(`avg-samples-${sensorId}`).value) || 1
             };
+            
             await this.config.updateSensorConfig(mainBoardId, sensorId, newConfig);
             
             let nameTag = document.getElementById(`name-${sensorId}`);
@@ -525,24 +536,16 @@ removeGraphFromStorage(graphId) {
     }
 
     async resetSettings() {
-        let confirmReset = confirm("⚠️ Are you sure you want to reset all sensor configurations to default?");
+        let confirmReset = confirm("⚠️ Are you sure you want to wipe all old sensors and reset?");
         if (confirmReset) {
-            let boardKeys = Object.keys(this.config.data);
-            if (boardKeys.length === 0) return;
+            let mainBoardKey = this.getActiveBoardKey();
+            if (!mainBoardKey || !this.config.data[mainBoardKey]) return;
             
-            let mainBoardId = boardKeys[0].replace('board_', '');
-            let sensors = this.config.data[boardKeys[0]];
-
-            for (let sensorId in sensors) {
-                let defaultVal = {
-                    name: `Sensor ${sensorId}`, unit: "Raw", rawMin: 0, rawMax: 1023,
-                    targetMin: 0, targetMax: 100, useMap: false, updateTime: 0, avgSamples: 1
-                };
-                await this.config.updateSensorConfig(mainBoardId, sensorId, defaultVal);
-            }
-            this.notyf.success("All sensors have been reset.");
+            this.config.data[mainBoardKey].sensors = {};
+            await this.config.saveAll();
+            
+            this.notyf.success("Memory wiped! Fetching only active sensors...");
             this.closeSettingsModal();
-            setTimeout(() => this.openSettingsModal(), 100);
         }
     }
 }

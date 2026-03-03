@@ -8,8 +8,11 @@ export class GraphManager {
         this.graphCounter = 0;
         this._equationCache = new Map();
         this.onGraphDeleted = null;
+        
+        // المتغير الجديد لمعرفة البورد النشط حالياً 
+        this.currentBoardId = null;
 
-        // تهيئة الإشعارات Notyf بنفس الشكل الاحترافي
+        // تهيئة الإشعارات
         this.notyf = new Notyf({
             duration: 3000,
             position: { x: 'right', y: 'top' },
@@ -41,10 +44,10 @@ export class GraphManager {
             hovertemplate: 'Val: %{y:.2f}<extra></extra>'
         }));
 
-        this.createGraphUI(gId, sensorNames.join(' & '), 'basic', sensorIds, null, traces);
+        // تمرير معرف البورد الحالي لربط الرسم به
+        this.createGraphUI(gId, sensorNames.join(' & '), 'basic', sensorIds, null, traces, this.currentBoardId);
     }
 
-// تمت إضافة unit = '' في المعطيات
     addEquationGraph(graphName, equationString, existingId = null, unit = '') {
         let gId;
         if (existingId) {
@@ -65,9 +68,9 @@ export class GraphManager {
             hovertemplate: 'Val: %{y:.2f}<extra></extra>'
         }];
         
-        this.createGraphUI(gId, graphName, 'equation', null, equationString, trace);
+        this.createGraphUI(gId, graphName, 'equation', null, equationString, trace, this.currentBoardId);
         this.graphs[gId].name = graphName; 
-        this.graphs[gId].unit = unit; // <-- حفظ الوحدة هنا
+        this.graphs[gId].unit = unit; 
         return gId; 
     }
 
@@ -124,10 +127,11 @@ export class GraphManager {
             hovertemplate: 'Val: %{y:.2f}<extra></extra>' 
         }));
 
-        this.createGraphUI(gId, `CSV: ${fileName.replace('.csv','')}`, 'csv', null, null, traces);
+        this.createGraphUI(gId, `CSV: ${fileName.replace('.csv','')}`, 'csv', null, null, traces, this.currentBoardId);
     }
 
-    createGraphUI(graphId, graphTitle, type, sensorIds, equation, tracesData) {
+    // تم إضافة paramter: boardId
+    createGraphUI(graphId, graphTitle, type, sensorIds, equation, tracesData, boardId) {
         const placeholder = this.container.querySelector('.graph-placeholder');
         if (placeholder) placeholder.style.display = 'none';
 
@@ -154,14 +158,14 @@ export class GraphManager {
             return s;
         };
 
-        const autoScrollBtn = mkBtn('<i class="fa-solid fa-lock"></i> Auto',                          'Toggle Auto-Scroll',  '#003300', '#00FF00', '#00AA00');
-        const zoomOutBtn    = mkBtn('<i class="fa-solid fa-magnifying-glass-minus"></i> Fit',         'Fit all data',        '#1a1a1a', '#FFB000', '#554400');
-        const zoomXInBtn    = mkBtn('<i class="fa-solid fa-compress"></i> X+',                        'Zoom in time axis',   '#1a1a1a', '#00FFFF', '#005555');
-        const zoomXOutBtn   = mkBtn('<i class="fa-solid fa-expand"></i> X-',                          'Zoom out time axis',  '#1a1a1a', '#00FFFF', '#005555');
-        const yUpBtn        = mkBtn('<i class="fa-solid fa-arrow-up"></i>',                           'Scroll Y up',         '#1a1a1a', '#CC00FF', '#440055');
-        const yDownBtn      = mkBtn('<i class="fa-solid fa-arrow-down"></i>',                         'Scroll Y down',       '#1a1a1a', '#CC00FF', '#440055');
-        const csvBtn        = mkBtn('<i class="fa-solid fa-download"></i> CSV',                       'Download CSV',        '#1a1a1a', '#888888', '#333333');
-        const deleteBtn     = mkBtn('<i class="fa-solid fa-trash"></i>',                              'Remove graph',        '#330000', '#FF2A2A', '#FF2A2A');
+        const autoScrollBtn = mkBtn('<i class="fa-solid fa-lock"></i> Auto', 'Toggle Auto-Scroll',  '#003300', '#00FF00', '#00AA00');
+        const zoomOutBtn    = mkBtn('<i class="fa-solid fa-magnifying-glass-minus"></i> Fit', 'Fit all data', '#1a1a1a', '#FFB000', '#554400');
+        const zoomXInBtn    = mkBtn('<i class="fa-solid fa-compress"></i> X+', 'Zoom in time axis',   '#1a1a1a', '#00FFFF', '#005555');
+        const zoomXOutBtn   = mkBtn('<i class="fa-solid fa-expand"></i> X-', 'Zoom out time axis',  '#1a1a1a', '#00FFFF', '#005555');
+        const yUpBtn        = mkBtn('<i class="fa-solid fa-arrow-up"></i>', 'Scroll Y up', '#1a1a1a', '#CC00FF', '#440055');
+        const yDownBtn      = mkBtn('<i class="fa-solid fa-arrow-down"></i>', 'Scroll Y down', '#1a1a1a', '#CC00FF', '#440055');
+        const csvBtn        = mkBtn('<i class="fa-solid fa-download"></i> CSV', 'Download CSV', '#1a1a1a', '#888888', '#333333');
+        const deleteBtn     = mkBtn('<i class="fa-solid fa-trash"></i>', 'Remove graph', '#330000', '#FF2A2A', '#FF2A2A');
         deleteBtn.style.marginLeft = 'auto';
 
         controlsDiv.append(
@@ -185,11 +189,13 @@ export class GraphManager {
         wrapper.appendChild(plotDiv);
         this.container.appendChild(wrapper);
 
+        // إضافة boardId إلى الأوبجكت
         const g = {
             div: plotDiv,
             type,
             sensorIds,
             equation,
+            boardId: boardId, 
             autoScroll: type !== 'csv',
             windowMin: Infinity,
             windowMax: -Infinity,
@@ -286,7 +292,6 @@ export class GraphManager {
                 const traces = g.div.data;
                  
                 if (!traces?.length || !traces[0].x?.length) {
-                    // تم التعديل هنا: استخدام Notyf ورسالة باللغة الإنجليزية
                     this.notyf.open({ type: 'warning', message: 'No data available to export yet!' });
                     return;
                 }
@@ -307,7 +312,6 @@ export class GraphManager {
                 });
                 if (filePath) {
                     await Neutralino.filesystem.writeFile(filePath, rows.join('\n'));
-                    // تم التعديل هنا: استخدام Notyf للنجاح ورسالة باللغة الإنجليزية
                     this.notyf.success('Log exported successfully!');
                 }
             } catch (err) { console.error(err); }
@@ -393,7 +397,8 @@ export class GraphManager {
         }
     }
 
-    updateAllGraphs(sensorDataObj) {
+    // تم التعديل ليقبل currentBoardId ويعمل تصفية
+    updateAllGraphs(sensorDataObj, currentBoardId) {
         const now = new Date();
         const nowMs = now.getTime();
         const halfWindowMs = 15_000;
@@ -403,6 +408,12 @@ export class GraphManager {
 
         for (const gId in this.graphs) {
             const g = this.graphs[gId];
+            
+            // تحقق صارم: إذا كان الرسم يتبع لبورد، وهو ليس البورد المتصل حالياً، تخطاه!
+            if (g.boardId && currentBoardId && g.boardId !== currentBoardId) {
+                continue;
+            }
+
             if (g.type === 'csv') continue;
 
             const newYValues = [];

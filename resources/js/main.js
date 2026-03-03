@@ -1,3 +1,4 @@
+// resources/js/main.js
 // ==========================================
 // 1. استدعاء الكلاسات (Modules)
 // ==========================================
@@ -5,7 +6,6 @@ import { SensorDashboard } from './sensor.js';
 import { StorageManager } from './storg.js';
 import { UIManager } from './ui_manager.js';
 var notyf = new Notyf();
-
 
 // تهيئة بيئة Neutralino أولاً قبل استدعاء أي أوامر أخرى
 Neutralino.init();
@@ -23,8 +23,6 @@ const comPortList = document.getElementById('comPortList');
 const btnPlay = document.getElementById("btnPlay");
 const btnStop = document.getElementById("btnStop");
 
-
-
 let driverProcessId = null;
 let isSystemConnected = false;
 let dataBuffer = ""; 
@@ -37,15 +35,12 @@ btnPlay.addEventListener('click',()=>{
     }
 })
 
-
-
 btnStop.addEventListener('click',()=>{
     if(isSystemConnected){
         isRun = false;
         ui.style_Run_Stop_btn(isRun)
     }
 })
-
 
 // ==========================================
 // 3. إدارة المنافذ (COM Ports)
@@ -85,11 +80,9 @@ async function startHardwareDriver() {
         try {
             await Neutralino.os.execCommand("taskkill /IM driver.exe /F /T");
             console.log("🧹 تم تنظيف الذاكرة من المحرك القديم.");
-        } catch (e) {
-            
-        }
+        } catch (e) {}
 
-        let exePath = NL_PATH + "/extensions/driver/bin/Debug/driver.exe";
+        let exePath = NL_PATH + "/extensions/driver/driver.exe";
         let command = `"${exePath}"`; 
 
         let process = await Neutralino.os.spawnProcess(command);
@@ -128,7 +121,6 @@ btnConnect.addEventListener('click', async () => {
             window.location.reload();
         }, 500);
     }
-    
 });
 
 // ==========================================
@@ -146,7 +138,6 @@ Neutralino.events.on('spawnedProcess', (event) => {
                 let cleanData = line.trim();
                 
                 if(cleanData) {
-                    console.log(cleanData);
                     try {
                         let liveData = JSON.parse(cleanData);
                         
@@ -155,6 +146,11 @@ Neutralino.events.on('spawnedProcess', (event) => {
 
                             if (!config.data[`board_${boardId}`]) {
                                 config.data[`board_${boardId}`] = {};
+                            }
+                            console.log(boardId)
+                            // تحديث معرف البورد الحالي ليتم استخدامه في الرسوم البيانية
+                            if(ui.graphManager) {
+                                ui.graphManager.currentBoardId = boardId;
                             }
 
                             // تحديث قيم Dashboard
@@ -170,19 +166,18 @@ Neutralino.events.on('spawnedProcess', (event) => {
                             ui.logCSVFrame(liveData.sensors);
 
                             // ==========================================
-                            // إضافة: إرسال البيانات إلى الرسوم البيانية
+                            // إضافة: إرسال البيانات إلى الرسوم البيانية مع المعرف
                             // ==========================================
                             let flatSensorData = {};
                             
                             liveData.sensors.forEach((sensorObj) => {
                                 let sensorKey = Object.keys(sensorObj)[0];
-                                // نجلب القيمة المفلترة/المعاملة مباشرة من الشاشة (Dashboard) لتكون مطابقة لما يراه المستخدم
                                 let valElement = document.getElementById(`val-${sensorKey}`);
                                 flatSensorData[sensorKey] = valElement ? parseFloat(valElement.innerText) : parseFloat(sensorObj[sensorKey]);
                             });
 
-                            // تحديث جميع الرسوم البيانية بالبيانات الجديدة
-                            ui.graphManager.updateAllGraphs(flatSensorData);
+                            // نمرر boardId مع البيانات لتحديث الرسوم التابعة له فقط
+                            ui.graphManager.updateAllGraphs(flatSensorData, boardId);
                             // ==========================================
 
                         }
@@ -212,36 +207,31 @@ Neutralino.events.on('windowClose', async () => {
 // ==========================================
 
 async function initializeApp() {
-     // تحميل الإعدادات من الهارد ديسك أولاً
     await refreshComPorts(); // جلب المنافذ
     await startHardwareDriver(); // تشغيل الـ C++
     await checkForUpdates();
 }
 
-//  جدث مهم لاطفاء البورد عند اعادة التشغيل
 window.addEventListener('beforeunload', () => {
     if (driverProcessId !== null) {
         Neutralino.os.updateSpawnedProcess(driverProcessId, 'stdIn', 'DisConect\n');
         setTimeout(() => {
             Neutralino.os.execCommand(`taskkill /PID ${driverProcessId} /F /T`);
-        }, 150);
+        }, 500);
     }
 });
+
 // ==========================================
 // 7. الكماند الي بتيجي من ال driver 
 // ==========================================
-
-
 async function handleMessageDriver(Message){
         if (Message.includes("Handshake Successful")) {
             isSystemConnected = true;
             isRun = true ; 
-            console.log(isSystemConnected);
             ui.styleConectBtn(isSystemConnected);
             ui.style_Run_Stop_btn(isRun); 
-            await config.loadAll(); // تحميل إعدادات الحساسات والرسوم
+            await config.loadAll(); 
             
-            // +++++ إضافة جديدة: رسم المخططات البيانية المحفوظة +++++
             ui.loadSavedGraphs();
         }
 }

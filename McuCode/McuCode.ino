@@ -1,6 +1,6 @@
 struct stdataSend {
   uint8_t header = 0xf1;
-  uint8_t id_board = 2;
+  uint8_t id_board = 3;
   uint8_t size = 5; // حجم ثابت
   float sensor_list[30]; // المصفوفة بحجم ثابت
   uint32_t check_sum = 0;

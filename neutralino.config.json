@@ -11,7 +11,7 @@
   "tokenSecurity": "one-time",
   "logging": {
     "enabled": true,
-    "writeToLogFile": true
+    "writeToLogFile": false
   },
 "nativeAllowList": [
     "app.*",
@@ -37,7 +37,7 @@
   "modes": {
     "window": {
       "title": "GrafApp",
-      "width": 800,
+      "width": 900,
       "height": 500,
       "minWidth": 400,
       "minHeight": 200,
@@ -45,7 +45,7 @@
       "fullScreen": false,
       "alwaysOnTop": false,
       "icon": "/resources/icons/appIcon.png",
-      "enableInspector": true,
+      "enableInspector": false,
       "borderless": false,
       "maximize": false,
       "hidden": false,
@@ -77,7 +77,7 @@
     }
   },
   "cli": {
-    "binaryName": "test1",
+    "binaryName": "GrafApp",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",

@@ -1,3 +1,5 @@
+// resources/js/storg.js
+
 export class StorageManager {
     constructor(storageKey = 'boards_config') {
         this.storageKey = storageKey;
@@ -26,41 +28,72 @@ export class StorageManager {
         }
     }
 
-    // 3. دالة ذكية لجلب إعدادات حساس معين (مع إرجاع قيم افتراضية إذا كان جديداً)
-getSensorConfig(boardId, sensorId) {
+    // ==========================================
+    // إضافة: دوال خاصة لإدارة الرسوم البيانية لكل بورد
+    // ==========================================
+    getBoardGraphs(boardId) {
+        let boardKey = `board_${boardId}`;
+        if (!this.data[boardKey]) this.data[boardKey] = {};
+        if (!this.data[boardKey].graphs) this.data[boardKey].graphs = [];
+        
+        return this.data[boardKey].graphs;
+    }
+
+    async saveBoardGraphs(boardId, graphsArray) {
+        let boardKey = `board_${boardId}`;
+        if (!this.data[boardKey]) this.data[boardKey] = {};
+        
+        this.data[boardKey].graphs = graphsArray;
+        await this.saveAll();
+    }
+    // ==========================================
+
+    // 3. دالة ذكية لجلب إعدادات حساس معين 
+    getSensorConfig(boardId, sensorId) {
         let boardKey = `board_${boardId}`;
         
-        // 1. إذا البورد مش موجود في الذاكرة، ننشئ له مكان
         if (!this.data[boardKey]) {
             this.data[boardKey] = {};
         }
         
-        // 2. إذا الحساس مش مسجل داخل هذا البورد، ننشئه بقيم افتراضية ونسجله في الذاكرة!
-        if (!this.data[boardKey][sensorId]) {
-            this.data[boardKey][sensorId] = { 
+        // تعديل هندسي: فصل الحساسات عن الرسوم في التخزين وترحيل القديم
+        if (!this.data[boardKey].sensors) {
+            this.data[boardKey].sensors = {};
+            // ترحيل البيانات القديمة للحفاظ على إعداداتك السابقة
+            for (let key in this.data[boardKey]) {
+                if (key !== 'sensors' && key !== 'graphs') {
+                    this.data[boardKey].sensors[key] = this.data[boardKey][key];
+                    delete this.data[boardKey][key];
+                }
+            }
+        }
+        
+        if (!this.data[boardKey].sensors[sensorId]) {
+            this.data[boardKey].sensors[sensorId] = { 
                 name: `Sensor ${sensorId}`, 
                 unit: "Raw",
                 min: 0,
                 max: 1023
             };
-            // ملاحظة هندسية: نحن نحفظها في الـ RAM فقط هنا (this.data) ولا نستدعي saveAll() 
-            // لكي لا نرهق القرص الصلب. الحفظ الدائم يحدث فقط عندما تضغط زر Save في النافذة.
         }
         
-        return this.data[boardKey][sensorId];
+        return this.data[boardKey].sensors[sensorId];
     }
 
-    // 4. دالة تحديث إعدادات حساس معين وحفظها فوراً (تُستخدم مع زر الحفظ في الـ Modal)
+    // 4. دالة تحديث إعدادات حساس معين وحفظها فوراً
     async updateSensorConfig(boardId, sensorId, newConfig) {
         let boardKey = `board_${boardId}`;
         
-        // إذا البورد مش مسجل قبل هيك، بننشئ له مكان
         if (!this.data[boardKey]) {
             this.data[boardKey] = {};
         }
         
+        if (!this.data[boardKey].sensors) {
+            this.data[boardKey].sensors = {};
+        }
+        
         // تحديث البيانات في الـ RAM
-        this.data[boardKey][sensorId] = newConfig;
+        this.data[boardKey].sensors[sensorId] = newConfig;
         
         // حفظ التعديلات على الهارد ديسك فوراً
         await this.saveAll();

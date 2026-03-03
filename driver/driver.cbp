@@ -25,6 +25,9 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-static-libgcc" />
+					<Add option="-static-libstdc++" />
+					<Add option="-static" />
 				</Linker>
 			</Target>
 		</Build>
@@ -32,6 +35,11 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Linker>
+			<Add option="-static-libgcc" />
+			<Add option="-static-libstdc++" />
+			<Add option="-static" />
+		</Linker>
 		<Unit filename="SerialPort.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="subFunction.h" />

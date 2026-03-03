@@ -90,7 +90,7 @@ void handleInputFromUI(SerialPort* arduino) {
 
 int main() {
     std::string portName;
-    std::cout << "⏳ Waiting for COM port name from JS..." << std::endl;
+    std::cout << "⏳ Waiting..." << std::endl;
     if (!(std::getline(std::cin, portName)) || portName.empty()) {
         return 1;
     }
